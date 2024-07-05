@@ -16,22 +16,21 @@ class TokenSetNode:
         # a dictionary of different tokens' frequencies
         self.token_freqs = token_freqs
         # track the current node's parent, for later frequency table recomposition
-        self.parent = None
+        self.parent = parent
         # children of the original token frequency table (n+1 gram variations)
         self.children = []
         # keep track of the current node's depth in the problem tree
-        self.depth = 0
+        self.depth = depth
 
 def filter_n1_tokens(n1_tokens):
-    print("n + 1 gram tokens before filtering...")
-    print(n1_tokens)
+    print("n + 1 gram tokens before filtering: ", n1_tokens)
 
     # TODO: implement this for n-grams larger than 1 in a time, space efficient manner
     n1_gram_tokens = {token for token in n1_tokens
                       if all(one_gram not in token for one_gram in TokenSetNode.one_grams_to_exclude)}
 
-    print("n + 1 gram tokens after filtering...")
-    print(n1_gram_tokens)
+    print("n + 1 gram tokens after filtering: ", n1_gram_tokens)
+    print()
 
     return n1_gram_tokens
 
@@ -108,16 +107,16 @@ def create_prob_tree(token_freqs, text="", parent=None, depth=0):
 
     # filter out tokens that intersect with a smaller token that has frequency = 1
     n1_gram_tokens = filter_n1_tokens(n1_gram_tokens)
-    token_powerset = powerset(n1_gram_tokens)
-    powerset_length = sum(1 for i in token_powerset)
-    print("Power set length ", powerset_length)
+    token_powerset = {i for i in powerset(n1_gram_tokens)}
+    # print("Power set length: ", len(token_powerset))
+    # print("Power set contents: ", token_powerset)
 
     # if there were no valid n+1-gram tokens
-    if powerset_length == 0:
+    if len(token_powerset) == 0:
         child = TokenSetNode({}, root, depth + 1)
 
-        print(depth + 1)
-        print(child.token_freqs)
+        # print("Child depth: ", depth + 1)
+        # print("Child token freqs: ", child.token_freqs)
         TokenSetNode.height = depth + 1
         TokenSetNode.deepest_child = child
         root.children.append(child)
@@ -128,19 +127,15 @@ def create_prob_tree(token_freqs, text="", parent=None, depth=0):
         # count frequencies of n-gram and n+1-gram tokens in the subset
         child_token_freqs = {token: text.count(token) for token in subset}
 
-        # # get frequencies of just n+1-gram tokens in the subset
-        # child_token_n1_freqs = {token: freq for token, freq in child_token_freqs.items() if token in n1_gram_tokens}
-
-
         # if the maximum frequency of an n+1-gram is 1 or the
         if max(child_token_freqs.values()) <= 1:
             # make a leaf node
             child = TokenSetNode(child_token_freqs, root, depth + 1)
 
             # check if this is the deepest leaf
-            if depth + 1 > height:
-                print(depth + 1)
-                print(child.token_freqs)
+            if depth + 1 > TokenSetNode.height:
+                # print("Child depth: ", depth + 1)
+                # print("Child token freqs: ", child.token_freqs)
                 TokenSetNode.height = depth + 1
                 TokenSetNode.deepest_child = child
 
@@ -170,18 +165,20 @@ def accumulate_token_set(node):
 def get_best_token_set(text):
     one_gram_freqs = Counter(text)
 
-    print("1-gram frequencies...")
-    print(one_gram_freqs)
+    print("1-gram frequencies: ", one_gram_freqs)
 
     TokenSetNode.one_grams_to_exclude = {token: count for token, count in one_gram_freqs.items() if count < 2}
 
-    print("1-gram tokens that didn't repeat...")
-    print(TokenSetNode.one_grams_to_exclude)
+    print("1-gram tokens that didn't repeat: ", TokenSetNode.one_grams_to_exclude)
 
     problem_tree = create_prob_tree(one_gram_freqs, text)
-    best_token_table = accumulate_token_set(TokenSetNode.deepest_child)
+    best_token_set = accumulate_token_set(TokenSetNode.deepest_child)
 
-    print(best_token_table)
+    print("Optimal token set: ", best_token_set)
 
-if __name__ == "__main__":
-    get_best_token_set("abczabc")
+    return best_token_set
+
+
+
+
+
