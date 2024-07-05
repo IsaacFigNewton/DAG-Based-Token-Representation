@@ -1,6 +1,8 @@
 import heapq
 from collections import defaultdict, Counter
 
+sep = "`"
+
 class HuffmanNode:
     def __init__(self, char, freq):
         # Character represented by this node
@@ -58,19 +60,36 @@ def build_codes(node, prefix="", codebook=0):
     return codebook
 
 
+def extract_data(data):
+    index_of_newline = data.find(sep)
+    data = [data[0:index_of_newline], data[index_of_newline:]]
+    # first get the encoded data
+    encoded_data = data[0]
+    # all the rest should be the huffman codebook
+    # this approach is resilient against newline characters being in the codebook
+    huffman_codes = str_to_codes(data[1])
+
+    return encoded_data, huffman_codes
+
 def codes_to_str(codebook):
     string = ""
     for key, value in codebook.items():
-        string = " ".join([string, key, value])
+        string += sep + str(key) + sep + str(value)
 
-    return string[1:]
+    return string
 
 
 def str_to_codes(string):
     codebook = dict()
-    str_items = string.split(" ")
-    for i in range(0, len(str_items), 2):
-        codebook[str_items[i]] = str_items[i + 1]
+
+    print(string)
+    string = string[len(sep):]
+    str_items = string.split(sep)
+
+    # ensure that there is stuff to decode from the codebook
+    if len(str_items) >= 2:
+        for i in range(0, len(str_items), 2):
+            codebook[str_items[i]] = str_items[i + 1]
 
     return codebook
 
@@ -113,57 +132,3 @@ def huffman_decoding(encoded_data, codebook):
             current_code = ""
 
     return ''.join(decoded_output)
-
-
-def test1():
-    data = "this is an example for huffman encoding"
-    print("Original data:", data)
-
-    encoded_data, huffman_codes = huffman_encoding(data)
-    print("Encoded data:", encoded_data)
-    print("Huffman Codes:", huffman_codes)
-
-    decoded_data = huffman_decoding(encoded_data, huffman_codes)
-    print("Decoded data:", decoded_data)
-
-def test2():
-    # Read the input file
-    with open("abcdabcd.txt", "r") as file:
-        data = file.read().strip()
-    print("Original data:", data)
-
-    # Encode the data
-    encoded_data, huffman_codes = huffman_encoding(data)
-    print("Encoded data:", encoded_data)
-    print("Huffman Codes:", huffman_codes)
-
-    # Write the encoded data to an output file
-    with open("abcdabcd_out.txt", "w") as file:
-        file.write(encoded_data)
-        file.write("\n")
-        file.write(codes_to_str(huffman_codes))
-
-    # Read the encoded data from the output file
-    with open("abcdabcd_out.txt", "r") as file:
-        data = file.read()
-
-    # Check the encoded data
-    data = data.split("\n")
-    encoded_data = data[0]
-    huffman_codes = str_to_codes(data[1])
-    print("Encoded data:", encoded_data)
-    print("Huffman Codes:", huffman_codes)
-
-    # Decode the encoded data
-    decoded_data = huffman_decoding(encoded_data, huffman_codes)
-    print("Decoded data:", decoded_data)
-
-# Example usage
-if __name__ == "__main__":
-    print("Running test 1...")
-    test1()
-
-    print("\n")
-
-    print("Running test 2...")
-    test2()
