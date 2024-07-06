@@ -22,15 +22,26 @@ class TokenSetNode:
         # keep track of the current node's depth in the problem tree
         self.depth = depth
 
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.token_freqs == other.token_freqs and self.depth == other.depth
+        return False
+
+    def __lt__(self, other):
+        if isinstance(other, self.__class__):
+            return self.depth < other.depth
+        return False
+
+
 def filter_n1_tokens(n1_tokens):
-    print("n + 1 gram tokens before filtering: ", n1_tokens)
+    # print("n + 1 gram tokens before filtering: ", n1_tokens)
 
     # TODO: implement this for n-grams larger than 1 in a time, space efficient manner
     n1_gram_tokens = {token for token in n1_tokens
                       if all(one_gram not in token for one_gram in TokenSetNode.one_grams_to_exclude)}
 
-    print("n + 1 gram tokens after filtering: ", n1_gram_tokens)
-    print()
+    # print("n + 1 gram tokens after filtering: ", n1_gram_tokens)
+    # print()
 
     return n1_gram_tokens
 
@@ -104,7 +115,6 @@ def create_prob_tree(token_freqs, text="", parent=None, depth=0):
             # move to the next appearance
             start += len(token)
 
-
     # filter out tokens that intersect with a smaller token that has frequency = 1
     n1_gram_tokens = filter_n1_tokens(n1_gram_tokens)
     token_powerset = {i for i in powerset(n1_gram_tokens)}
@@ -123,7 +133,7 @@ def create_prob_tree(token_freqs, text="", parent=None, depth=0):
 
         return root
 
-    for subset in token_powerset: #.union(base_set)):
+    for subset in token_powerset:  # .union(base_set)):
         # count frequencies of n-gram and n+1-gram tokens in the subset
         child_token_freqs = {token: text.count(token) for token in subset}
 
@@ -140,7 +150,7 @@ def create_prob_tree(token_freqs, text="", parent=None, depth=0):
                 TokenSetNode.deepest_child = child
 
             root.children.append(child)
-        
+
         else:
             # recursively build the tree for deeper levels
             child = create_prob_tree(child_token_freqs, text, root, depth + 1)
@@ -151,7 +161,7 @@ def create_prob_tree(token_freqs, text="", parent=None, depth=0):
 
 def accumulate_token_set(node):
     # get the current node's token set
-    token_set = node.token_freqs
+    token_set = dict(node.token_freqs)
 
     # if this node has a parent, add on its token set and recurse
     if node.parent != None:
@@ -160,6 +170,17 @@ def accumulate_token_set(node):
 
     # return the combined token set
     return token_set
+
+
+def print_tree(node, indent=0):
+
+    if node.depth == TokenSetNode.height:
+        print('\t' * indent, "Depth ", node.depth, ", Token Frequencies: ",node.token_freqs, "\t<---- Deepest child")
+    else:
+        print('\t' * indent, "Depth ", node.depth, ", Token Frequencies: ",node.token_freqs)
+
+    for child in node.children:
+        print_tree(child, indent + 1)
 
 
 def get_best_token_set(text):
@@ -172,12 +193,22 @@ def get_best_token_set(text):
     print("1-gram tokens that didn't repeat: ", TokenSetNode.one_grams_to_exclude)
 
     problem_tree = create_prob_tree(one_gram_freqs, text)
+
+    print()
+    print_tree(problem_tree)
+    print()
+
     best_token_set = accumulate_token_set(TokenSetNode.deepest_child)
 
     print("Optimal token set: ", best_token_set)
+    print("\n")
 
     return best_token_set
 
+
+
+if __name__ == "__main__":
+    token_set = get_best_token_set("aaaa")
 
 
 
