@@ -34,27 +34,6 @@ def powerset(iterable):
     return chain.from_iterable(combinations(s, r) for r in range(1, len(s) + 1))
 
 
-def check_token_freq_tables(freq_table, depth, token_freq_tables):
-    # convert the frequency table to a hashable type by treating it as json to be flattened
-    json_str = json.dumps(freq_table, sort_keys=True)
-
-    # if the set of tables at this depth has been defined
-    if depth in token_freq_tables.keys():
-        # if this branch has been previously explored
-        if json_str in token_freq_tables[depth]:
-            return True
-        # otherwise, mark this branch as explored, but continue deeper
-        else:
-            token_freq_tables[depth].add(json_str)
-            return False
-    # otherwise, if nothing has been explored at this depth before
-    else:
-        # create a new entry for the branch at this depth
-        token_freq_tables[depth] = set()
-        # mark it as explored
-        token_freq_tables[depth].add(json_str)
-        # continue
-        return False
 
 
 def collect_n1_grams(base_set, text):

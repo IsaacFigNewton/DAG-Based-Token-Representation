@@ -1,10 +1,4 @@
 class TokenSetNode:
-    # keep track of the deepest child and the height of the tree to determine the best token set
-    deepest_child = None
-    height = 0
-    # since it would probably be too expensive to store a full token frequency table in each node
-    # I'm just storing any 1-gram tokens that only appear once in this master set
-    one_grams_to_exclude = set()
 
     def __init__(self, token_freqs, parent, depth):
         # a dictionary of different tokens' frequencies
