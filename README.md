@@ -1,6 +1,10 @@
 <h1>DAG-Based Tokenizer/Embedder</h1>
 <a href="https://github.com/serengil/decision-trees-for-ml/tree/master">Repurposed base code for the modified ID3 algorithm here</a>
+<br>
 <a href="https://research.google/blog/a-fast-wordpiece-tokenization-system/">Google does something similar to this, but better and without the embedding step</a>
+
+<br>
+<br>
 
 <h1>Encoding Approach Overview (Refactoring in progress)</h1>
 
