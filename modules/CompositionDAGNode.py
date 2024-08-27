@@ -89,7 +89,6 @@ class CompositionDAGNode:
     # do breadth-first accumulation of the suffix tree into the dag
     def suffix_tree_to_dag(self, suffix_tree):
         print("Building DAG from modified suffix tree...")
-        suffix_tree.print_tree()
 
         all_tokens = suffix_tree.get_tokens()
         print(f"Token set: {all_tokens}")

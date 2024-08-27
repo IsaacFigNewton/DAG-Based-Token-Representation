@@ -32,13 +32,16 @@ def run_test(text,
              parallelize=True,
              num_graphs_to_plot=1):
 
+    start_time = time.time()
     suffix_tree, tokenizations[(text, min_freq)] = get_suffix_tree(text,
                                                                    min_freq,
                                                                    delimiters=delimiters,
                                                                    tree=tree,
                                                                    parallelize=parallelize)
-    # print("modified suffix tree composed in ", time.time() - start_time, " seconds.")
-    # print_tree(suffix_tree)
+
+    if debugging_verbosity["SuffixNode"]["general"] > 0:
+        print("Modified suffix tree composed in ", time.time() - start_time, " seconds.")
+        suffix_tree.print_tree()
 
     composition_dag = CompositionDAGNode()
     # start_time = time.time()

@@ -6,7 +6,8 @@ debugging_verbosity = {
     "SuffixNode": {
         "general": 0,
         "parallel": 0,
-        "series": 0
+        "series": 0,
+        "pruning": 0
     },
     "DAGNode": 0,
     "FlatTreeStore": 0

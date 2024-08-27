@@ -324,18 +324,18 @@ class SuffixNode:
         # Find the best split point using delimiters
         split_point = SuffixNode.find_split_point(text, delimiter_regex)
 
-        if debugging_verbosity["SuffixNode"]["general"] > 0:
+        if debugging_verbosity["SuffixNode"]["parallel"] > 0:
             print(f"Split text: {[text[:split_point], text[split_point:]]}")
 
         # if the text has been split down to the size of a word
         if split_point == None or split_point == 0 or split_point == len(text) - 1:
-            if debugging_verbosity["SuffixNode"]["general"] > 1:
+            if debugging_verbosity["SuffixNode"]["parallel"] > 1:
                 print("Leaf detected...")
             root = SuffixNode()
             # set the root of the flat tree store to the initial SuffixNode pointing to it
             root.flat_tree_store.root = root
 
-            if debugging_verbosity["SuffixNode"]["general"] > 0:
+            if debugging_verbosity["SuffixNode"]["parallel"] > 0:
                 print(f"Building suffix tree for '{text}'...")
 
             # loop through the string, starting with the last character
@@ -345,7 +345,7 @@ class SuffixNode:
                 # add the suffix to the tree
                 root.add_suffix(suffix)
 
-                if debugging_verbosity["SuffixNode"]["general"] > 1:
+                if debugging_verbosity["SuffixNode"]["parallel"] > 1:
                     root.print_tree()
                     print()
 
@@ -354,7 +354,9 @@ class SuffixNode:
         left_half = text[:split_point]
         right_half = text[split_point + 1:]
 
-        print(left_half)
+        if debugging_verbosity["SuffixNode"]["parallel"] > 0:
+            print(f"left_half: {left_half}")
+            print(f"left_half: {right_half}")
 
         left_tree = SuffixNode.parallelized_build_tree(left_half,
                                                        delimiters=delimiters,
@@ -365,7 +367,8 @@ class SuffixNode:
 
         left_tree.merge_trees(right_tree, 0)
 
-        print()
+        if debugging_verbosity["SuffixNode"]["parallel"] > 1:
+            print()
 
         return left_tree
 
