@@ -199,10 +199,10 @@ class SuffixNode:
         self.flat_tree_store.child_dict.update({
             key: SuffixNode(suffix=key,
                             token=key,
-                            frequency=value,
+                            frequency=1,
                             parent=self,
-                            flat_tree_store=self.flat_tree_store) \
-            for key, value in delimiter_counts.items()
+                            flat_tree_store=self.flat_tree_store)
+            for key in delimiter_counts.keys()
         })
 
     def base_build_tree(self, text="", delimiters=None, delimiter_regex=r"\n"):
@@ -230,8 +230,7 @@ class SuffixNode:
                     print()
                     print()
 
-        self.add_delimiters_to_tree(text=text,
-                                    delimiters=delimiters)
+        print(self.get_tokens())
 
     def parallelized_build_tree(text, delimiters=None, delimiter_regex=r"\n"):
         if len(text) == 0:
@@ -283,9 +282,6 @@ class SuffixNode:
 
         left_tree.merge_trees(right_tree)
 
-        left_tree.add_delimiters_to_tree(text=text,
-                                         delimiters=delimiters)
-
         print()
 
         return left_tree
@@ -315,15 +311,13 @@ class SuffixNode:
             self.keys_to_my_children.remove(child_token)
             del self.flat_tree_store.child_dict[child_token]
 
-    # set all the suffix tree nodes' token properties
-    # return an aggregated set of all the tokens
-    def get_tokens(self, prev_token=""):
-        tokens = set(self \
-                     .flat_tree_store \
-                     .child_dict \
-                     .keys())
 
-        return tokens
+    # return an aggregated set of all the tokens
+    def get_tokens(self):
+        return set(self
+                     .flat_tree_store
+                     .child_dict
+                     .keys())
 
 
 def get_suffix_tree(text,
@@ -373,12 +367,13 @@ def get_suffix_tree(text,
 
     print("Pruning modified suffix tree...")
     suffix_tree.prune_tree(threshold=threshold)
+    suffix_tree.add_delimiters_to_tree(delimiters=delimiters)
+
     if debugging:
         suffix_tree.print_tree()
 
-    print("Getting token set...")
-    tokens = suffix_tree.get_tokens()
     if debugging:
-        print(tokens)
+        print("Getting token set...")
+    tokens = suffix_tree.get_tokens()
 
     return suffix_tree, tokens

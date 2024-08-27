@@ -19,7 +19,7 @@ class FlatTreeStore:
         if self.root is None:
             raise ValueError("No root node provided to FlatTreeStore object")
 
-        if debugging:
+        if debugging and verbose["FlatTreeStore"]:
             print(f"Tokenizing {text}")
 
         tokenization = []
@@ -71,7 +71,7 @@ class FlatTreeStore:
                 print(f"Adding last token to tokenization list...")
             tokenization.append(current_node.token)
 
-        if debugging:
+        if debugging and verbose["FlatTreeStore"]:
             print(tokenization)
             print()
 

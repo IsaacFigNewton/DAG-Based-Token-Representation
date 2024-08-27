@@ -18,7 +18,7 @@ def get_tests():
     # text = text[454:500]
     # # text = text[0:500]
     text = "black. Yellow, black.\n :\nOoh, black and yellow"
-    text = "abbabababba"
+    text = "abbabababba yogabbagabba"
     tests = [text]
 
     print(text[:50])
@@ -90,7 +90,7 @@ def run_tests():
                 num_graphs_to_plot -= 1
                 mean_time += new_time
 
-            plot_embeddings(token_vector_mappings, max_vector_plots)
+            # plot_embeddings(token_vector_mappings, max_vector_plots)
 
             test_results["min frequency"].append(min_freq)
             test_results["test number"].append(i)
@@ -117,4 +117,4 @@ if __name__ == "__main__":
 
     plt.xlabel('Min Frequency (log scale)')
     plt.ylabel('Mean Time (log scale)')
-    plt.show()
+    # plt.show()

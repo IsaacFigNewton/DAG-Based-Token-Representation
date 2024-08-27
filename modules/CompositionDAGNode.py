@@ -92,6 +92,8 @@ class CompositionDAGNode:
         print("Building DAG from modified suffix tree...")
 
         all_tokens = suffix_tree.get_tokens()
+        print(f"Token set: {all_tokens}")
+
         # create a dict for mapping tokens to indices in the adjacency matrix
         token_list = list(all_tokens)
         self.dag_store.token_index_map = {token_list[i]: i for i in range(len(token_list))}
@@ -142,11 +144,13 @@ class CompositionDAGNode:
             for child_token in current_suffix_node.keys_to_my_children:
                 suffix_node_queue.put(current_suffix_node.flat_tree_store.child_dict[child_token])
 
-        # print("lil djacency matrix after processing: ", self.dag_store.adjacency_matrix)
+        if debugging and verbose["DAGNode"]:
+            print("lil adjacency matrix after processing: ", self.dag_store.adjacency_matrix)
 
         # convert the LIL adjacency matrix to CSR format for more efficient modification
         self.dag_store.adjacency_matrix = sp.csr_matrix(self.dag_store.adjacency_matrix)
 
-        # print("Sparse adjacency matrix:\n", self.dag_store.adjacency_matrix)
+        if debugging and verbose["DAGNode"]:
+            print("Sparse adjacency matrix:\n", self.dag_store.adjacency_matrix)
 
         self.dag_store.edge_set = {(pre, cum, pos) for pre, cum, pos in self.dag_store.edge_set if pre is not None}
