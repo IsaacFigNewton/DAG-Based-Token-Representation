@@ -1,6 +1,6 @@
 import os
 import sys
-from queue import Queue
+from collections import deque
 import scipy.sparse as sp
 
 from .FlatTreeStore import *
@@ -47,49 +47,49 @@ class CompositionDAGNode:
         #   in the child token as the edge weight
         self.dag_store.edge_set.add((self.token, child.token, len(child.parents) - 1))
         if self.token is not None and child.token is not None:
-            self\
-                .dag_store\
-                .adjacency_matrix[self.dag_store.token_index_map[self.token], self.dag_store.token_index_map[child.token]] = 1
-
+            self \
+                .dag_store \
+                .adjacency_matrix[
+                self.dag_store.token_index_map[self.token], self.dag_store.token_index_map[child.token]] = 1
 
     # since this is recursively saving smaller tokens, it's basically depth-first
     def build_subgraph(self, suffix_node=None, suffix_tokenization=[]):
-      vertices = self.dag_store.vertices
+        vertices = self.dag_store.vertices
 
-      for token in suffix_tokenization:
+        for token in suffix_tokenization:
 
-        # if the predecessor token is not in the vertex store,
-        #   recursively build a sub-graph of suffix tokens
-        if token not in vertices.keys():
-            # create a new dag node for the current token
-            #   and put it in the vertex store
-            vertices[token] = CompositionDAGNode(token=token,
-                                                 frequency=suffix_node\
-                                                              .flat_tree_store\
-                                                              .child_dict[token]\
-                                                              .frequency,
-                                                 dag_store = self.dag_store)
+            # if the predecessor token is not in the vertex store,
+            #   recursively build a sub-graph of suffix tokens
+            if token not in vertices.keys():
+                # create a new dag node for the current token
+                #   and put it in the vertex store
+                vertices[token] = CompositionDAGNode(token=token,
+                                                     frequency=suffix_node \
+                                                     .flat_tree_store \
+                                                     .child_dict[token] \
+                                                     .frequency,
+                                                     dag_store=self.dag_store)
 
-            # break the missing token into even smaller tokens using the largest available smaller tokens
-            curr_suffix_tokenization = suffix_node.flat_tree_store.tokenize(text=token,
-                                                max_token_len=len(token) - 1)
-            # build a subgraph from the smaller tokens
-            temp_vert = vertices[token]
-            temp_vert, additional_vertices = temp_vert.build_subgraph(suffix_node, curr_suffix_tokenization)
-            vertices.update(additional_vertices)
+                # break the missing token into even smaller tokens using the largest available smaller tokens
+                curr_suffix_tokenization = suffix_node.flat_tree_store.tokenize(text=token,
+                                                                                max_token_len=len(token) - 1)
+                # build a subgraph from the smaller tokens
+                temp_vert = vertices[token]
+                temp_vert, additional_vertices = temp_vert.build_subgraph(suffix_node, curr_suffix_tokenization)
+                vertices.update(additional_vertices)
 
-            vertices[token] = temp_vert
+                vertices[token] = temp_vert
 
-        # base case: if the predecessor is in the vertex store
-        #   add an edge from the current node's predecessor to it
-        vertices[token].add_edge(self)
+            # base case: if the predecessor is in the vertex store
+            #   add an edge from the current node's predecessor to it
+            vertices[token].add_edge(self)
 
-      return self, vertices
-
+        return self, vertices
 
     # do breadth-first accumulation of the suffix tree into the dag
     def suffix_tree_to_dag(self, suffix_tree):
         print("Building DAG from modified suffix tree...")
+        suffix_tree.print_tree()
 
         all_tokens = suffix_tree.get_tokens()
         print(f"Token set: {all_tokens}")
@@ -107,20 +107,23 @@ class CompositionDAGNode:
         vertices = self.dag_store.vertices
         vertices[self.token] = self
 
-        suffix_node_queue = Queue()
-        suffix_node_queue.put(suffix_tree)
+        suffix_node_queue = deque()
+        suffix_node_queue.append(suffix_tree)
 
-        while not suffix_node_queue.empty():
+        while 0 < len(suffix_node_queue):
+            if debugging_verbosity["DAGNode"] > 1:
+                print(f"SuffixNode DAG Queue state: {[node.token for node in suffix_node_queue]}")
+
             # get the next suffix node from the queue
-            current_suffix_node = suffix_node_queue.get()
+            current_suffix_node = suffix_node_queue.popleft()
 
             if current_suffix_node.token is not None and current_suffix_node.token not in all_tokens:
-                raise KeyError("current_suffix_node.token not in all_tokens")
+                raise KeyError(f"{current_suffix_node.token} not in token set {all_tokens}")
 
             # create a dag vertex and add it to the set of vertices
             vert = CompositionDAGNode(token=current_suffix_node.token,
                                       frequency=current_suffix_node.frequency,
-                                      dag_store = self.dag_store)
+                                      dag_store=self.dag_store)
             vertices[vert.token] = vert
 
             # if it's the root of the base dag or one of the top-level tokens, just add it to the vertex dict
@@ -133,7 +136,7 @@ class CompositionDAGNode:
             else:
                 # tokenize the current token using the largest available smaller tokens
                 current_tokenization = current_suffix_node.flat_tree_store.tokenize(current_suffix_node.token,
-                                                                    len(current_suffix_node.token) - 1)
+                                                                                    len(current_suffix_node.token) - 1)
 
                 temp_vert = vert
                 temp_vert, additional_vertices = temp_vert.build_subgraph(current_suffix_node, current_tokenization)
@@ -142,15 +145,17 @@ class CompositionDAGNode:
 
             # add all the current node's children to the queue
             for child_token in current_suffix_node.keys_to_my_children:
-                suffix_node_queue.put(current_suffix_node.flat_tree_store.child_dict[child_token])
+                if debugging_verbosity["DAGNode"] > 1:
+                    print(f"SuffixNode DAG Queue state: {[node.token for node in suffix_node_queue]}")
+                suffix_node_queue.append(current_suffix_node.flat_tree_store.child_dict[child_token])
 
-        if debugging and verbose["DAGNode"]:
+        if debugging_verbosity["DAGNode"] > 1:
             print("lil adjacency matrix after processing: ", self.dag_store.adjacency_matrix)
 
         # convert the LIL adjacency matrix to CSR format for more efficient modification
         self.dag_store.adjacency_matrix = sp.csr_matrix(self.dag_store.adjacency_matrix)
 
-        if debugging and verbose["DAGNode"]:
+        if debugging_verbosity["DAGNode"] > 1:
             print("Sparse adjacency matrix:\n", self.dag_store.adjacency_matrix)
 
         self.dag_store.edge_set = {(pre, cum, pos) for pre, cum, pos in self.dag_store.edge_set if pre is not None}

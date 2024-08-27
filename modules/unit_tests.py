@@ -10,7 +10,7 @@ class SuffixTests(unittest.TestCase):
                                            tree=None,
                                            test=True)
         token_set = set(suffix_tree.flat_tree_store.child_dict.keys())
-        base_token_set = {'ba', 'abab', 'o', 'ab', 'babab', 'babba', 'gabba', 'bababba',
-                          'abba', 'a', 'y', 'bab', 'ababba', 'bba', 'g', 'b', " ", "\n"}
+        base_token_set = {'ab', 'o', 'babba', 'g', 'gabba', 'bab', 'ababba', 'b', ' ',
+                          'abba', 'y', '\n', 'a', 'bba', 'babab', 'abab', 'ba', 'bababba'}
         print(token_set, base_token_set)
         self.assertEqual(token_set, base_token_set)

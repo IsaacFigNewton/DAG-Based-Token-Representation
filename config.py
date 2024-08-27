@@ -2,11 +2,14 @@ import sys
 import os
 import importlib
 
-debugging = True
-verbose = {
-    "SuffixNode": False,
-    "DAGNode": False,
-    "FlatTreeStore": False
+debugging_verbosity = {
+    "SuffixNode": {
+        "general": 0,
+        "parallel": 0,
+        "series": 0
+    },
+    "DAGNode": 0,
+    "FlatTreeStore": 0
 }
 
 # freq_range = range(50, 1050, 50)
@@ -23,4 +26,4 @@ test_results = {
 
 # currently only works with single-character delimiters
 delimiters = {" ", "\n"}   #r"\n",     #r"\n\n|.\n|\)\n|:|\.\.\."
-parallelize_composition = False
+parallelize_composition = True

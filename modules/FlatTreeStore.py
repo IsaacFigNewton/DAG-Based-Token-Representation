@@ -19,8 +19,13 @@ class FlatTreeStore:
         if self.root is None:
             raise ValueError("No root node provided to FlatTreeStore object")
 
-        if debugging and verbose["FlatTreeStore"]:
+        if debugging_verbosity["FlatTreeStore"] > 1:
             print(f"Tokenizing {text}")
+
+        if max_token_len < 1:
+            if debugging_verbosity["FlatTreeStore"] > 1:
+                print(f"Text was too short")
+            return [text]
 
         tokenization = []
         current_node = self.root
@@ -39,13 +44,13 @@ class FlatTreeStore:
         #   and the max token length hasn't been reached
         while j < len(text) + 1:
             current_token = text[i:j]
-            if debugging and verbose["FlatTreeStore"]:
+            if debugging_verbosity["FlatTreeStore"] > 1:
                 print(f"Current token: {current_token}")
 
             # if the max token size is reached, store this token and move on
             if j - i > max_token_len:
 
-                if debugging and verbose["FlatTreeStore"]:
+                if debugging_verbosity["FlatTreeStore"] > 1:
                     print(f"Adding current token to tokenization list...")
 
                 add_token()
@@ -61,17 +66,17 @@ class FlatTreeStore:
                 #   get the new text as 1 character before this issue
                 #   and set the current node to the root
                 else:
-                    if debugging and verbose["FlatTreeStore"]:
+                    if debugging_verbosity["FlatTreeStore"] > 1:
                         print(f"No child match found, adding previous token to tokenization list...")
 
                     add_token()
 
         if len(current_token) > 0:
-            if debugging and verbose["FlatTreeStore"]:
+            if debugging_verbosity["FlatTreeStore"] > 1:
                 print(f"Adding last token to tokenization list...")
             tokenization.append(current_node.token)
 
-        if debugging and verbose["FlatTreeStore"]:
+        if debugging_verbosity["FlatTreeStore"] > 1:
             print(tokenization)
             print()
 

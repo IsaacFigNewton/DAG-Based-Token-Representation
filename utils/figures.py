@@ -34,10 +34,10 @@ def plot_embeddings(embeddings, max_plots):
 
 
 def plot_dag(dag_store, A=None, scaling=50, edge_width=1, k=2):
-    if debugging and verbose["DAGNode"]:
+    if debugging_verbosity["DAGNode"] > 1:
         print("Adjacency matrix:\n", A)
 
-    if debugging and A is None:
+    if debugging_verbosity["DAGNode"] > 0 and A is None:
         print("Adjacency matrix was empty/not defined")
 
     # Create a directed graph from the adjacency matrix
