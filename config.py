@@ -5,7 +5,7 @@ import importlib
 debugging_verbosity = {
     "SuffixNode": {
         "general": 0,
-        "parallel": 0,
+        "parallel": 1,
         "series": 0,
         "pruning": 0
     },

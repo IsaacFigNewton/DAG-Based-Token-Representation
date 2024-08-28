@@ -34,19 +34,25 @@ class SuffixNode:
         self.flat_tree_store = flat_tree_store
 
     def __str__(self):
-        return self.token
+        return f"SuffixNode: {self.token}"
 
     def print_tree(self, indent=0):
         my_children = {self.flat_tree_store.child_dict[key] for key in self.keys_to_my_children}
 
         # Iterate over the child.suffixes (features) in the tree
         for child in my_children:
-            print(' ' * indent + str(child.token) + ": " + str(child.frequency))
+            if debugging_verbosity["SuffixNode"]["pruning"] > 0:
+                print(f"{' ' * indent} '{child.suffix}', '{child.token}', {child.frequency}")
+            else:
+                print(f"{' ' * indent} '{child.suffix}': {child.frequency}")
             # If the child is a SuffixNode, recursively print the subtree
             if isinstance(child, SuffixNode):
                 child.print_tree(indent=indent + 4)
             else:
-                print(' ' * (indent + 4) + "\"" + str(child.suffix) + "\": " + str(child.frequency))
+                if debugging_verbosity["SuffixNode"]["pruning"] > 0:
+                    print(f"{' ' * (indent + 4)} '{child.suffix}', '{child.token}', {child.frequency}")
+                else:
+                    print(f"{' ' * (indent + 4)} '{child.suffix}': {child.frequency}")
 
     def set_token(self):
         if self.parent.token:
@@ -81,7 +87,7 @@ class SuffixNode:
 
         # Create the new child (new suffix) under the split node
         new_child = SuffixNode(suffix=new_suffix,
-                               frequency=1,
+                               frequency=0,
                                parent=split_node,
                                flat_tree_store=self.flat_tree_store)
         new_child.set_token()
@@ -96,7 +102,8 @@ class SuffixNode:
         try:
             self.keys_to_my_children.remove(child.token)
         except:
-            raise KeyError(f"Couldn't remove '{child.token}' from '{self.token}''s children: {self.keys_to_my_children}")
+            raise KeyError(
+                f"Couldn't remove '{child.token}' from '{self.token}''s children: {self.keys_to_my_children}")
 
         del self.flat_tree_store.child_dict[child.token]
 
@@ -201,35 +208,34 @@ class SuffixNode:
 
         return
 
-
     def merge_trees(self, other, indent):
+        # combine the roots' frequencies
+        self.frequency += other.frequency
+
         other_tree = other.flat_tree_store.child_dict
         shared_tokens = set(self.keys_to_my_children).intersection(set(other.keys_to_my_children))
         other_unique_tokens = set(other.keys_to_my_children).difference(set(self.keys_to_my_children))
 
         if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-            print(f"{' '*indent}Shared tokens for subtrees '{self.token}' and '{other.token}': {shared_tokens}")
-            print(f"{' '*indent}Tokens unique to '{other.token}': {other_unique_tokens}")
+            print(f"{' ' * indent}Shared tokens for subtrees '{self.token}' and '{other.token}': {shared_tokens}")
+            print(f"{' ' * indent}Tokens unique to '{other.token}': {other_unique_tokens}")
 
         # combine children held in common between both suffix trees
         for token in shared_tokens:
             my_child = self.flat_tree_store.child_dict[token]
             other_child = other_tree[token]
-            # combine the childrens' frequencies
-            my_child.frequency += other_child.frequency
             # recursively merge any grandchildren that might be held in common
-            my_child.merge_trees(other_child, indent+4)
+            my_child.merge_trees(other_child, indent + 4)
             self.flat_tree_store.child_dict[token] = my_child
 
-
         if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-            print(f"{' '*indent}Tokens unique to '{other.token}' before combining with '{self.token}': {other_unique_tokens}")
+            print(
+                f"{' ' * indent}Tokens unique to '{other.token}' before combining with '{self.token}': {other_unique_tokens}")
             print(other_tree)
         # recursively add all the other tree's unique subtrees to this one
-        self.merge_unique_subtrees(other_tree, other_unique_tokens)
+        self.merge_unique_subtrees(self, other_tree, other_unique_tokens)
 
-
-    def merge_unique_subtrees(self, other_tree_dict, other_unique_tokens):
+    def merge_unique_subtrees(self, parent, other_tree_dict, other_unique_tokens):
         if not isinstance(other_tree_dict, dict):
             raise TypeError(f"other_tree is not a dictionary: {other_tree_dict}")
 
@@ -237,8 +243,10 @@ class SuffixNode:
         for token in other_unique_tokens:
             other_child = other_tree_dict[token]
 
-            other_child.parent = self
-            self.keys_to_my_children.add(other_child.token)
+            # the adoptive parent may be different from self,
+            #    which is especially true for unique subtrees starting at the alphabet level
+            other_child.parent = parent
+            parent.keys_to_my_children.add(other_child.token)
             # self.flat_tree_store.child_dict[other_child.token] = other_child
 
         # add all children to the main tree store
@@ -253,8 +261,7 @@ class SuffixNode:
             print()
         # add the grandchildren to the main tree
         for token, grandchild in temp.items():
-            self.merge_unique_subtrees(other_tree_dict, grandchild.keys_to_my_children)
-
+            self.merge_unique_subtrees(grandchild, other_tree_dict, grandchild.keys_to_my_children)
 
     def find_split_point(text, delimiters):
         if not delimiters:
@@ -372,40 +379,64 @@ class SuffixNode:
 
         return left_tree
 
-    def prune_tree(self, threshold=2):
+    def prune_tree(self, threshold=2, indent=0):
         # If the node has no children (ie it's a leaf), return
         if not self.keys_to_my_children:
-            # print("no children")
-            return
+            if debugging_verbosity["SuffixNode"]["pruning"] > 1:
+                print(f"{' ' * (indent + 4)}No children for {self.token}")
+            return self, set()
 
         children_to_kill = set()
+        dead_children = set()
         # Recursively prune the tree
         for child_token in self.keys_to_my_children:
             child = self.flat_tree_store.child_dict[child_token]
 
+            if debugging_verbosity["SuffixNode"]["pruning"] > 1:
+                print(f"{' ' * indent}{child.suffix}:\tToken:\t{child.token}")
+                if child.parent is not None:
+                    print(f"{' ' * indent}\tParent:\t{child.parent.token}")
+                else:
+                    print(f"{' ' * indent}\tChild is orphan")
+
+                print(f"{' ' * indent}\tChildren:")
+
             if isinstance(child, SuffixNode):
                 # if the child is above the threshold or it's a single character token node
-                if (child.frequency >= threshold\
-                        or child.parent is None\
-                        or child.parent.token is None):
+                if (child.frequency >= threshold
+                    or child.parent.token is None) \
+                        and (child.token in child.parent.keys_to_my_children):
                     # print("not removed")
-                    self.flat_tree_store.child_dict[child_token].prune_tree(threshold)
+                    child, zombie_children = child.prune_tree(threshold, indent=4)
+                    self.flat_tree_store.child_dict[child_token] = child
+                    dead_children = dead_children.union(zombie_children)
                 else:
                     # print("removed")
                     children_to_kill.add(child_token)
+
+        # remove zombie children from the token set at this level
+        #   this is really only an issue if the parallelized approach is used
+        for child_token in dead_children:
+            if child_token in self.flat_tree_store.child_dict.keys():
+                del self.flat_tree_store.child_dict[child_token]
 
         for child_token in children_to_kill:
             # if the token's frequency falls below the threshold, prune it
             self.keys_to_my_children.remove(child_token)
             del self.flat_tree_store.child_dict[child_token]
+            dead_children.add(child_token)
 
+        if debugging_verbosity["SuffixNode"]["pruning"] > 1:
+            print(self.get_tokens())
+
+        return self, dead_children
 
     # return an aggregated set of all the tokens
     def get_tokens(self):
         return set(self
-                     .flat_tree_store
-                     .child_dict
-                     .keys())
+                   .flat_tree_store
+                   .child_dict
+                   .keys())
 
 
 def get_suffix_tree(text,
@@ -455,9 +486,10 @@ def get_suffix_tree(text,
 
     print("Pruning modified suffix tree...")
     suffix_tree.prune_tree(threshold=threshold)
+    print(suffix_tree.get_tokens())
     suffix_tree.add_delimiters_to_tree(delimiters=delimiters)
 
-    if debugging_verbosity["SuffixNode"]["general"] > 0:
+    if debugging_verbosity["SuffixNode"]["pruning"] > 0:
         suffix_tree.print_tree()
 
     if debugging_verbosity["SuffixNode"]["general"] > 0:

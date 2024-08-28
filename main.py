@@ -49,7 +49,7 @@ def run_test(text,
     # end_time = time.time() - start_time
     # print("dag composed in ", end_time, " seconds.")
 
-    if num_graphs_to_plot > 0:
+    if num_graphs_to_plot > 0 and len(composition_dag.dag_store.vertices.keys()) < 50:
         plot_dag(composition_dag.dag_store,
                  A=composition_dag.dag_store.adjacency_matrix,
                  k=4,
