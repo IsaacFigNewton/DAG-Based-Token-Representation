@@ -403,9 +403,9 @@ class SuffixNode:
 
             if isinstance(child, SuffixNode):
                 # if the child is above the threshold or it's a single character token node
-                if (child.frequency >= threshold
-                    or child.parent.token is None) \
-                        and (child.token in child.parent.keys_to_my_children):
+                if child.parent is None or ((child.frequency >= threshold
+                                             or child.parent.token is None)
+                                            and (child.token in child.parent.keys_to_my_children)):
                     # print("not removed")
                     child, zombie_children = child.prune_tree(threshold, indent=4)
                     self.flat_tree_store.child_dict[child_token] = child
