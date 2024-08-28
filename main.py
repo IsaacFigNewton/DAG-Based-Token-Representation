@@ -18,7 +18,7 @@ def get_tests():
     # text = text[454:500]
     # # text = text[0:500]
     text = "black. Yellow, black.\n :\nOoh, black and yellow"
-    text = "abbabababba yogabbagabba"
+    text = "abbabababba"# yogabbagabba"
     tests = [text]
 
     print(text[:50])

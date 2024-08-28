@@ -41,7 +41,7 @@ class SuffixNode:
 
         # Iterate over the child.suffixes (features) in the tree
         for child in my_children:
-            if debugging_verbosity["SuffixNode"]["pruning"] > 0:
+            if any(debugging_verbosity["SuffixNode"]) > 0:
                 print(f"{' ' * indent} '{child.suffix}', '{child.token}', {child.frequency}")
             else:
                 print(f"{' ' * indent} '{child.suffix}': {child.frequency}")
@@ -49,7 +49,7 @@ class SuffixNode:
             if isinstance(child, SuffixNode):
                 child.print_tree(indent=indent + 4)
             else:
-                if debugging_verbosity["SuffixNode"]["pruning"] > 0:
+                if any(debugging_verbosity["SuffixNode"]) > 0:
                     print(f"{' ' * (indent + 4)} '{child.suffix}', '{child.token}', {child.frequency}")
                 else:
                     print(f"{' ' * (indent + 4)} '{child.suffix}': {child.frequency}")
@@ -87,7 +87,7 @@ class SuffixNode:
 
         # Create the new child (new suffix) under the split node
         new_child = SuffixNode(suffix=new_suffix,
-                               frequency=0,
+                               frequency=1,
                                parent=split_node,
                                flat_tree_store=self.flat_tree_store)
         new_child.set_token()
@@ -317,6 +317,7 @@ class SuffixNode:
                 self.add_suffix(suffix)
 
                 if debugging_verbosity["SuffixNode"]["series"] > 1:
+                    print(f"Current token: {suffix}")
                     self.print_tree()
                     print()
                     print()

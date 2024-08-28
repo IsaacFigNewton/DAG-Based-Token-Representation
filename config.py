@@ -5,8 +5,8 @@ import importlib
 debugging_verbosity = {
     "SuffixNode": {
         "general": 0,
-        "parallel": 2,
-        "series": 0,
+        "parallel": 0,
+        "series": 2,
         "pruning": 0
     },
     "DAGNode": 0,
@@ -27,4 +27,4 @@ test_results = {
 
 # currently only works with single-character delimiters
 delimiters = {" ", "\n"}   #r"\n",     #r"\n\n|.\n|\)\n|:|\.\.\."
-parallelize_composition = True
+parallelize_composition = False
