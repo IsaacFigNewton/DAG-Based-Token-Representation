@@ -10,6 +10,13 @@ from utils.util import *
 from utils.figures import *
 from utils.vector_embedding import *
 
+tokenizations = dict()
+test_results = {
+    "min frequency": [],
+    "test number": [],
+    "mean time": [],
+}
+
 def get_tests():
     # test_url = "https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt"
     # with url.urlopen(test_url) as f:
@@ -18,7 +25,7 @@ def get_tests():
     # text = text[454:500]
     # # text = text[0:500]
     text = "black. Yellow, black.\n :\nOoh, black and yellow"
-    text = "abbabababba"# yogabbagabba"
+    text = "abbabababba yogabbagabba"
     tests = [text]
 
     print(text[:50])

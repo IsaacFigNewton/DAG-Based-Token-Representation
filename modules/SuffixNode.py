@@ -79,7 +79,7 @@ class SuffixNode:
     def create_split_nodes(self, child, old_suffix, new_suffix, split_node):
         # Create the old child (original suffix) under the split node
         old_child = SuffixNode(suffix=old_suffix,
-                               frequency=child.frequency,
+                               frequency=child.frequency - 1,
                                parent=split_node,
                                flat_tree_store=self.flat_tree_store,
                                keys_to_my_children=child.keys_to_my_children)
@@ -208,7 +208,15 @@ class SuffixNode:
 
         return
 
-    def merge_trees(self, other, indent):
+    def add_all_suffixes(self, word):
+        # loop through the word, starting with the last character
+        for i in range(0, len(word)):
+            suffix = word[len(word) - i - 1:]
+
+            # add the suffix to the tree
+            self.add_suffix(suffix)
+
+    def merge_trees(self, other, indent=0):
         # combine the roots' frequencies
         self.frequency += other.frequency
 
@@ -296,7 +304,7 @@ class SuffixNode:
             for key in delimiter_counts.keys()
         })
 
-    def base_build_tree(self, text="", delimiters=None, delimiter_regex=r"\n"):
+    def base_build_tree(self, text="", delimiter_regex=r"\n"):
         # split the text into blocks, where each block is an independent clause
         clauses = re.split(delimiter_regex, text)
         # print(set(clauses))
@@ -309,18 +317,7 @@ class SuffixNode:
             if debugging_verbosity["SuffixNode"]["series"] > 0:
                 print(f"Building suffix tree for '{string}'...")
 
-            # loop through the string, starting with the last character
-            for i in range(0, len(string)):
-                suffix = string[len(string) - i - 1:]
-
-                # add the suffix to the tree
-                self.add_suffix(suffix)
-
-                if debugging_verbosity["SuffixNode"]["series"] > 1:
-                    print(f"Current token: {suffix}")
-                    self.print_tree()
-                    print()
-                    print()
+            self.add_all_suffixes(string)
 
         if debugging_verbosity["SuffixNode"]["series"] > 1:
             print(self.get_tokens())
@@ -346,16 +343,7 @@ class SuffixNode:
             if debugging_verbosity["SuffixNode"]["parallel"] > 0:
                 print(f"Building suffix tree for '{text}'...")
 
-            # loop through the string, starting with the last character
-            for i in range(0, len(text)):
-                suffix = text[len(text) - i - 1:]
-
-                # add the suffix to the tree
-                root.add_suffix(suffix)
-
-                if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-                    root.print_tree()
-                    print()
+            root.add_all_suffixes(text)
 
             return root
 
@@ -478,9 +466,7 @@ def get_suffix_tree(text,
             # set the root of the flat tree store to the initial SuffixNode pointing to it
             suffix_tree.flat_tree_store.root = suffix_tree
 
-            suffix_tree.base_build_tree(text,
-                                        delimiters=delimiters,
-                                        delimiter_regex=delimiter_regex)
+            suffix_tree.base_build_tree(text, delimiter_regex=delimiter_regex)
 
         if debugging_verbosity["SuffixNode"]["general"] > 1:
             suffix_tree.print_tree()
