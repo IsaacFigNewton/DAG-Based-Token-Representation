@@ -304,23 +304,39 @@ class SuffixNode:
             for key in delimiter_counts.keys()
         })
 
-    def base_build_tree(self, text="", delimiter_regex=r"\n"):
+    def base_build_tree(text="", delimiter_regex=r"\n"):
+        # create a store for the tree nodes
+        flat_tree_store = FlatTreeStore(child_dict={
+            letter: SuffixNode(suffix=letter, token=letter) for letter in set(text)
+        })
+
+        # point all the internal tree stores back at the main one
+        for key in flat_tree_store.child_dict.keys():
+            flat_tree_store.child_dict[key].flat_tree_store = flat_tree_store
+
+        suffix_tree = SuffixNode(flat_tree_store=flat_tree_store,
+                                 keys_to_my_children=set(flat_tree_store.child_dict.keys()))
+        # set the root of the flat tree store to the initial SuffixNode pointing to it
+        suffix_tree.flat_tree_store.root = suffix_tree
+
         # split the text into blocks, where each block is an independent clause
         clauses = re.split(delimiter_regex, text)
         # print(set(clauses))
 
         if debugging_verbosity["SuffixNode"]["series"] > 1:
             print("Initial suffix tree (just alphabet):")
-            self.print_tree()
+            suffix_tree.print_tree()
 
         for string in clauses:
             if debugging_verbosity["SuffixNode"]["series"] > 0:
                 print(f"Building suffix tree for '{string}'...")
 
-            self.add_all_suffixes(string)
+            suffix_tree.add_all_suffixes(string)
 
         if debugging_verbosity["SuffixNode"]["series"] > 1:
-            print(self.get_tokens())
+            print(suffix_tree.get_tokens())
+
+        return suffix_tree
 
     def parallelized_build_tree(text, delimiters=None, delimiter_regex=r"\n"):
         if len(text) == 0:
@@ -452,21 +468,7 @@ def get_suffix_tree(text,
 
         else:
             print("Running suffix_tree.base_build_tree()...")
-            # create a store for the tree nodes
-            flat_tree_store = FlatTreeStore(child_dict={
-                letter: SuffixNode(suffix=letter, token=letter) for letter in set(text)
-            })
-
-            # point all the internal tree stores back at the main one
-            for key in flat_tree_store.child_dict.keys():
-                flat_tree_store.child_dict[key].flat_tree_store = flat_tree_store
-
-            suffix_tree = SuffixNode(flat_tree_store=flat_tree_store,
-                                     keys_to_my_children=set(flat_tree_store.child_dict.keys()))
-            # set the root of the flat tree store to the initial SuffixNode pointing to it
-            suffix_tree.flat_tree_store.root = suffix_tree
-
-            suffix_tree.base_build_tree(text, delimiter_regex=delimiter_regex)
+            suffix_tree = SuffixNode.base_build_tree(text, delimiter_regex=delimiter_regex)
 
         if debugging_verbosity["SuffixNode"]["general"] > 1:
             suffix_tree.print_tree()

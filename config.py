@@ -21,4 +21,4 @@ max_vector_plots = 0
 
 # currently only works with single-character delimiters
 delimiters = {" ", "\n"}   #r"\n",     #r"\n\n|.\n|\)\n|:|\.\.\."
-parallelize_composition = False
+parallelize_composition = True
