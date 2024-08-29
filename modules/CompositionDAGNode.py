@@ -88,7 +88,8 @@ class CompositionDAGNode:
 
     # do breadth-first accumulation of the suffix tree into the dag
     def suffix_tree_to_dag(self, suffix_tree):
-        print("Building DAG from modified suffix tree...")
+        if debugging_verbosity["DAGNode"] > -1:
+            print("Building DAG from modified suffix tree...")
 
         all_tokens = suffix_tree.get_tokens()
         print(f"Token set: {all_tokens}")
@@ -115,7 +116,6 @@ class CompositionDAGNode:
 
             # get the next suffix node from the queue
             current_suffix_node = suffix_node_queue.popleft()
-
             if current_suffix_node.token is not None and current_suffix_node.token not in all_tokens:
                 raise KeyError(f"{current_suffix_node.token} not in token set {all_tokens}")
 
@@ -130,13 +130,11 @@ class CompositionDAGNode:
                 vertices[current_suffix_node.token] = vert
                 # add an edge from the base graph's root to the top-level token
                 self.add_edge(vert)
-
             # otherwise, add edges
             else:
                 # tokenize the current token using the largest available smaller tokens
                 current_tokenization = current_suffix_node.flat_tree_store.tokenize(current_suffix_node.token,
                                                                                     len(current_suffix_node.token) - 1)
-
                 temp_vert = vert
                 temp_vert, additional_vertices = temp_vert.build_subgraph(current_suffix_node, current_tokenization)
                 vertices[vert.token] = temp_vert
@@ -150,11 +148,14 @@ class CompositionDAGNode:
 
         if debugging_verbosity["DAGNode"] > 1:
             print("lil adjacency matrix after processing: ", self.dag_store.adjacency_matrix)
-
         # convert the LIL adjacency matrix to CSR format for more efficient modification
         self.dag_store.adjacency_matrix = sp.csr_matrix(self.dag_store.adjacency_matrix)
-
         if debugging_verbosity["DAGNode"] > 1:
             print("Sparse adjacency matrix:\n", self.dag_store.adjacency_matrix)
 
         self.dag_store.edge_set = {(pre, cum, pos) for pre, cum, pos in self.dag_store.edge_set if pre is not None}
+
+    # converts the edge set and vertex set to a file format for Gephi
+    def dag_to_file(self):
+        print(f"Vertex set:\n{self.dag_store.vertices}")
+        print(f"Edge set:\n{self.dag_store.edge_set}")

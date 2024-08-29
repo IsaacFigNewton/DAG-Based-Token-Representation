@@ -1,6 +1,7 @@
 import time
 import warnings
 
+import urllib.request as url
 import pandas as pd
 
 from config import *
@@ -18,14 +19,14 @@ test_results = {
 }
 
 def get_tests():
-    # test_url = "https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt"
-    # with url.urlopen(test_url) as f:
-    #     text = f.read().decode('utf-8')
+    test_url = "https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt"
+    with url.urlopen(test_url) as f:
+        text = f.read().decode('utf-8')
     # # previously 454:500
     # text = text[454:500]
-    # # text = text[0:500]
-    text = "black. Yellow, black.\n :\nOoh, black and yellow"
-    text = "abbabababba yogabbagabba"
+    text = text[0:500]
+    # text = "black. Yellow, black.\n :\nOoh, black and yellow"
+    # text = "abbabababba yogabbagabba"
     tests = [text]
 
     print(text[:50])
@@ -62,15 +63,18 @@ def run_test(text,
 
         num_graphs_to_plot -= 1
 
-    # get tensor embeddings for all vertices
-    start_time = time.time()
-    token_vector_mappings = vectorize(composition_dag.dag_store.adjacency_matrix,
-                                      composition_dag.dag_store.reversed_token_map,
-                                      tokenizations[(text, min_freq)])
-    end_time = time.time() - start_time
+    # # get tensor embeddings for all vertices
+    # start_time = time.time()
+    # token_vector_mappings = vectorize(composition_dag.dag_store.adjacency_matrix,
+    #                                   composition_dag.dag_store.reversed_token_map,
+    #                                   tokenizations[(text, min_freq)])
+    # end_time = time.time() - start_time
+
+    end_time = 0
+    token_vector_mappings = None
 
     # return {(pre, cum, pos+1) for pre, cum, pos in composition_dag.dag_store.edge_set if pre is not None}
-    return end_time, suffix_tree, token_vector_mappings, num_graphs_to_plot
+    return end_time, suffix_tree, token_vector_mappings
 
 
 def run_tests():
@@ -88,8 +92,7 @@ def run_tests():
 
             mean_time = 0
             for fold in range(folds):
-                new_time = 0
-                new_time, prev_trees[i], token_vector_mappings, _ = run_test(text=tests[i],
+                new_time, prev_trees[i], token_vector_mappings = run_test(text=tests[i],
                                                                           min_freq=min_freq,
                                                                           delimiters=delimiters,
                                                                           tree=prev_trees[i],
@@ -115,13 +118,13 @@ if __name__ == "__main__":
     tests_df = pd.DataFrame.from_dict(test_results)
     print(tests_df.head())
 
-    plt.plot(tests_df["min frequency"],
-             tests_df["mean time"]
-             )
-
-    plt.xscale('log')
-    plt.yscale('log')
-
-    plt.xlabel('Min Frequency (log scale)')
-    plt.ylabel('Mean Time (log scale)')
+    # plt.plot(tests_df["min frequency"],
+    #          tests_df["mean time"]
+    #          )
+    #
+    # plt.xscale('log')
+    # plt.yscale('log')
+    #
+    # plt.xlabel('Min Frequency (log scale)')
+    # plt.ylabel('Mean Time (log scale)')
     # plt.show()

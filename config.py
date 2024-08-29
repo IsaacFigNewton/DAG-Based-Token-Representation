@@ -4,12 +4,10 @@ import importlib
 
 debugging_verbosity = {
     "SuffixNode": {
-        "general": 0,
-        "parallel": 0,
-        "series": 0,
+        "general": -1,
         "pruning": 0
     },
-    "DAGNode": 0,
+    "DAGNode": -1,
     "FlatTreeStore": 0
 }
 

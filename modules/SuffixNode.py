@@ -240,10 +240,7 @@ class SuffixNode:
             self.add_suffix(suffix)
 
     # add the delimiter frequencies back into the suffix tree's storage
-    def add_delimiters_to_tree(self, text="", delimiters=None):
-        # # WARNING: THIS DEFEATS THE PURPOSE OF THE PARALLELIZATION, BRINGS T(n) TO O(n)
-        # #   FIX BY INCLUDING DELIMITER COUNTING IN SUBTREES
-        # delimiter_counts = count_occurrences(text, delimiters)
+    def add_delimiters_to_tree(self, delimiters=None):
         delimiter_counts = {delimiter: 1 for delimiter in delimiters}
 
         self.keys_to_my_children.update(set(delimiter_counts.keys()))
@@ -276,17 +273,17 @@ class SuffixNode:
         clauses = re.split(delimiter_regex, text)
         # print(set(clauses))
 
-        if debugging_verbosity["SuffixNode"]["series"] > 1:
+        if debugging_verbosity["SuffixNode"]["general"] > 1:
             print("Initial suffix tree (just alphabet):")
             suffix_tree.print_tree()
 
         for string in clauses:
-            if debugging_verbosity["SuffixNode"]["series"] > 0:
+            if debugging_verbosity["SuffixNode"]["general"] > 0:
                 print(f"Building suffix tree for '{string}'...")
 
             suffix_tree.add_all_suffixes(string)
 
-        if debugging_verbosity["SuffixNode"]["series"] > 1:
+        if debugging_verbosity["SuffixNode"]["general"] > 1:
             print(suffix_tree.get_tokens())
 
         return suffix_tree
@@ -351,21 +348,22 @@ def get_suffix_tree(text,
     # use the tree option in case a previous tree is to be pruned further
     suffix_tree = tree
     if suffix_tree is None:
-        print("Building modified suffix tree...")
+        if debugging_verbosity["SuffixNode"]["general"] > -1:
+            print("Building modified suffix tree...")
 
         # suffix_tree = SuffixNode(children = {SuffixNode(suffix=unique_char) for unique_char in set(text)})
 
         delimiter_regex = compile_regex(delimiters)
 
-        print("Running suffix_tree.build_tree()...")
+        if debugging_verbosity["SuffixNode"]["general"] > -1:
+            print("Running suffix_tree.build_tree()...")
         suffix_tree = SuffixNode.build_tree(text, delimiter_regex=delimiter_regex)
 
         if debugging_verbosity["SuffixNode"]["general"] > 1:
             suffix_tree.print_tree()
-
-    print("Pruning modified suffix tree...")
+    if debugging_verbosity["SuffixNode"]["general"] > -1:
+        print("Pruning modified suffix tree...")
     suffix_tree.prune_tree(threshold=threshold)
-    print(suffix_tree.get_tokens())
     suffix_tree.add_delimiters_to_tree(delimiters=delimiters)
 
     if debugging_verbosity["SuffixNode"]["pruning"] > 0:
