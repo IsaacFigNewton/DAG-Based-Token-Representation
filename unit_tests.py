@@ -1,4 +1,6 @@
 import unittest
+import urllib.request as url
+
 from modules.SuffixNode import *
 from modules.CompositionDAGNode import *
 from utils.util import *
@@ -197,7 +199,6 @@ class CompositionDAGNodeTests(unittest.TestCase):
     def test_add_edge(self):
         pass
 
-
     def test_build_subgraph(self):
         pass
 
@@ -205,12 +206,21 @@ class CompositionDAGNodeTests(unittest.TestCase):
         pass
 
     def test_dag_to_file(self):
+        test_url = "https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt"
+        with url.urlopen(test_url) as f:
+            text = f.read().decode('utf-8')
+        self.test_text = text
+        self.delimiters = {"\n"}
+        self.threshold = 50
+        self.suffix_tree, _ = get_suffix_tree(text=self.test_text,
+                                              threshold=self.threshold,
+                                              delimiters=self.delimiters)
+
         dag = CompositionDAGNode()
         # start_time = time.time()
         dag.suffix_tree_to_dag(self.suffix_tree)
 
-        dag.dag_to_file()
-
+        dag.export_dag("bee_movie.csv")
 
 
 if __name__ == "__main__":

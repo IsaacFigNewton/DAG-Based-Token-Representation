@@ -92,7 +92,8 @@ class CompositionDAGNode:
             print("Building DAG from modified suffix tree...")
 
         all_tokens = suffix_tree.get_tokens()
-        print(f"Token set: {all_tokens}")
+        if debugging_verbosity["DAGNode"] > -1:
+            print(f"Token set: {str(all_tokens)[:100]}")
 
         # create a dict for mapping tokens to indices in the adjacency matrix
         token_list = list(all_tokens)
@@ -156,6 +157,12 @@ class CompositionDAGNode:
         self.dag_store.edge_set = {(pre, cum, pos) for pre, cum, pos in self.dag_store.edge_set if pre is not None}
 
     # converts the edge set and vertex set to a file format for Gephi
-    def dag_to_file(self):
-        print(f"Vertex set:\n{self.dag_store.vertices}")
-        print(f"Edge set:\n{self.dag_store.edge_set}")
+    def export_dag(self, filename):
+        path = "graphs/" + filename
+        # clear the file
+        with open(path, 'w') as f:
+            f.write("")
+
+        with open(path, 'a') as f:
+            for edge in self.dag_store.edge_set:
+                f.write(f"{edge[0]};{edge[1]}\n")
