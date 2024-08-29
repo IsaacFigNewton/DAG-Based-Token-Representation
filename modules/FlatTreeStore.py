@@ -29,52 +29,26 @@ class FlatTreeStore:
 
         tokenization = []
         current_node = self.root
-        i = 0
-        j = 1
 
         # add the token to the tokenization list
         def add_token():
-            nonlocal i, j, current_node, tokenization
+            nonlocal text, current_node, tokenization
             tokenization.append(current_node.token)
-            i = j - 1
-            j = i + 1
+            text = text[len(current_node.token):]
             current_node = self.root
 
-        # while the end of the text hasn't been reached
-        #   and the max token length hasn't been reached
-        while j < len(text) + 1:
-            current_token = text[i:j]
-            if debugging_verbosity["FlatTreeStore"] > 1:
-                print(f"Current token: {current_token}")
+        while len(text) > 0:
+            split_index, child_token = current_node.longest_common_prefix(text, doSuffix=False)
+            print(split_index, child_token)
 
-            # if the max token size is reached, store this token and move on
-            if j - i > max_token_len:
-
-                if debugging_verbosity["FlatTreeStore"] > 1:
-                    print(f"Adding current token to tokenization list...")
-
-                add_token()
-
-            # otherwise, get the next largest token
+            # if there's a child of the current node with a shared prefix
+            if split_index > 0:
+                # move to the next child
+                current_node = self.child_dict[child_token]
+            # if there's no common prefix
             else:
-                # if the current token is a child of the current_node
-                if current_token in current_node.keys_to_my_children:
-                    current_node = current_node.flat_tree_store.child_dict[current_token]
-                    j += 1
-                # otherwise, if the current token isn't in the token set,
-                #   add the current node's token to the tokenization,
-                #   get the new text as 1 character before this issue
-                #   and set the current node to the root
-                else:
-                    if debugging_verbosity["FlatTreeStore"] > 1:
-                        print(f"No child match found, adding previous token to tokenization list...")
-
-                    add_token()
-
-        if len(current_token) > 0:
-            if debugging_verbosity["FlatTreeStore"] > 1:
-                print(f"Adding last token to tokenization list...")
-            tokenization.append(current_node.token)
+                # add a token and reset the token pointers
+                add_token()
 
         if debugging_verbosity["FlatTreeStore"] > 1:
             print(tokenization)

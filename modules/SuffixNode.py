@@ -135,38 +135,53 @@ class SuffixNode:
         self.flat_tree_store.child_dict[new_child.token] = new_child
         self.flat_tree_store.child_dict[old_child.token] = old_child
 
-    def add_suffix(self, suffix):
-        if debugging_verbosity["SuffixNode"]["general"] > 1:
-            print(f"Current suffix: '{suffix}'")
-            print(f"Children: {self.keys_to_my_children}")
-
+    def longest_common_prefix(self, suffix, doSuffix):
         # Iterate over each child to find the longest common prefix
         for child_token in self.keys_to_my_children:
             child = self.flat_tree_store.child_dict[child_token]
 
             # Find the longest common prefix
+            if doSuffix:
+                child_suffix = child.suffix
+            else:
+                child_suffix = child.token
+
             min_len = min(len(suffix), len(child.suffix))
             i = 0
-            while i < min_len and suffix[i] == child.suffix[i]:
+            while i < min_len and suffix[i] == child_suffix[i]:
                 i += 1
 
             # If there is a common prefix
             if i > 0:
-                if debugging_verbosity["SuffixNode"]["general"] > 1:
-                    print(f"Child with shared suffix: '{child.token}'")
-                # Update the frequency of the child node
-                child.frequency += 1
+                return i, child_token
 
-                # If the common prefix matches the entire child suffix,
-                #   and the new suffix would be non-empty,
-                #   recurse on the remainder of the suffix
-                if i == len(child.suffix) and len(suffix[i:]) > 0:
-                    child.add_suffix(suffix[i:])
-                # Otherwise, split the edge
-                elif i < len(suffix):
-                    self.split_edge(child, i, suffix)
+        return -1, None
 
-                return
+    def add_suffix(self, suffix):
+        if debugging_verbosity["SuffixNode"]["general"] > 1:
+            print(f"Current suffix: '{suffix}'")
+            print(f"Children: {self.keys_to_my_children}")
+
+        index, child_token = self.longest_common_prefix(suffix=suffix, doSuffix=True)
+        # If there is a common prefix
+        if index > 0:
+            child = self.flat_tree_store.child_dict[child_token]
+
+            if debugging_verbosity["SuffixNode"]["general"] > 1:
+                print(f"Child with shared suffix: '{child.token}'")
+            # Update the frequency of the child node
+            child.frequency += 1
+
+            # If the common prefix matches the entire child suffix,
+            #   and the new suffix would be non-empty,
+            #   recurse on the remainder of the suffix
+            if index == len(child.suffix) and len(suffix[index:]) > 0:
+                child.add_suffix(suffix[index:])
+            # Otherwise, split the edge
+            elif index < len(suffix):
+                self.split_edge(child, index, suffix)
+
+            return
 
         # if it's an unseen character
         #   (like in the case of a divide-and-conquer approach)
@@ -235,9 +250,10 @@ class SuffixNode:
 
     def build_tree(text="", delimiter_regex=r"\n"):
         # create a store for the tree nodes
-        flat_tree_store = FlatTreeStore(child_dict={
-            letter: SuffixNode(suffix=letter, token=letter) for letter in set(text)
-        })
+        flat_tree_store = FlatTreeStore()
+        # child_dict={
+        #     letter: SuffixNode(suffix=letter, token=letter) for letter in set(text)
+        # })
 
         # point all the internal tree stores back at the main one
         for key in flat_tree_store.child_dict.keys():
@@ -267,13 +283,12 @@ class SuffixNode:
 
         return suffix_tree
 
-
     def prune_tree(self, threshold=2, indent=0):
         # If the node has no children (ie it's a leaf), return
         if not self.keys_to_my_children:
             if debugging_verbosity["SuffixNode"]["pruning"] > 1:
                 print(f"{' ' * (indent + 4)}No children for {self.token}")
-            return self, set()
+            return self
 
         children_to_kill = set()
         dead_children = set()
@@ -296,18 +311,11 @@ class SuffixNode:
                                              or child.parent.token is None)
                                             and (child.token in child.parent.keys_to_my_children)):
                     # print("not removed")
-                    child, zombie_children = child.prune_tree(threshold, indent=4)
+                    child = child.prune_tree(threshold, indent=4)
                     self.flat_tree_store.child_dict[child_token] = child
-                    dead_children = dead_children.union(zombie_children)
                 else:
                     # print("removed")
                     children_to_kill.add(child_token)
-
-        # remove zombie children from the token set at this level
-        #   this is really only an issue if the parallelized approach is used
-        for child_token in dead_children:
-            if child_token in self.flat_tree_store.child_dict.keys():
-                del self.flat_tree_store.child_dict[child_token]
 
         for child_token in children_to_kill:
             # if the token's frequency falls below the threshold, prune it
@@ -318,7 +326,7 @@ class SuffixNode:
         if debugging_verbosity["SuffixNode"]["pruning"] > 1:
             print(self.get_tokens())
 
-        return self, dead_children
+        return self
 
     # return an aggregated set of all the tokens
     def get_tokens(self):

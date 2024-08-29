@@ -94,7 +94,7 @@ class SuffixTests(unittest.TestCase):
         root.add_all_suffixes("abcd")
 
         root.print_tree()
-        root, _ = root.prune_tree(threshold=2)
+        root = root.prune_tree(threshold=2)
 
         # Check pruned structure
         for character in set("abcd"):
