@@ -216,77 +216,6 @@ class SuffixNode:
             # add the suffix to the tree
             self.add_suffix(suffix)
 
-    def merge_trees(self, other, indent=0):
-        # combine the roots' frequencies
-        self.frequency += other.frequency
-
-        other_tree = other.flat_tree_store.child_dict
-        shared_tokens = set(self.keys_to_my_children).intersection(set(other.keys_to_my_children))
-        other_unique_tokens = set(other.keys_to_my_children).difference(set(self.keys_to_my_children))
-
-        if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-            print(f"{' ' * indent}Shared tokens for subtrees '{self.token}' and '{other.token}': {shared_tokens}")
-            print(f"{' ' * indent}Tokens unique to '{other.token}': {other_unique_tokens}")
-
-        # combine children held in common between both suffix trees
-        for token in shared_tokens:
-            my_child = self.flat_tree_store.child_dict[token]
-            other_child = other_tree[token]
-            # recursively merge any grandchildren that might be held in common
-            my_child.merge_trees(other_child, indent + 4)
-            self.flat_tree_store.child_dict[token] = my_child
-
-        if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-            print(
-                f"{' ' * indent}Tokens unique to '{other.token}' before combining with '{self.token}': {other_unique_tokens}")
-            print(other_tree)
-        # recursively add all the other tree's unique subtrees to this one
-        self.merge_unique_subtrees(self, other_tree, other_unique_tokens)
-
-    def merge_unique_subtrees(self, parent, other_tree_dict, other_unique_tokens):
-        if not isinstance(other_tree_dict, dict):
-            raise TypeError(f"other_tree is not a dictionary: {other_tree_dict}")
-
-        # add the other tree's unique children to this tree
-        for token in other_unique_tokens:
-            other_child = other_tree_dict[token]
-
-            # the adoptive parent may be different from self,
-            #    which is especially true for unique subtrees starting at the alphabet level
-            other_child.parent = parent
-            parent.keys_to_my_children.add(other_child.token)
-            # self.flat_tree_store.child_dict[other_child.token] = other_child
-
-        # add all children to the main tree store
-        temp = {token: grandchild for token, grandchild in other_tree_dict.items() if token in other_unique_tokens}
-        if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-            print(f"All SuffixNodes to be added to main tree: {temp}")
-        self.flat_tree_store.child_dict.update(temp)
-
-        if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-            print(f"Merging grandchildren: {other_tree_dict.keys()}")
-            print(other_tree_dict)
-            print()
-        # add the grandchildren to the main tree
-        for token, grandchild in temp.items():
-            self.merge_unique_subtrees(grandchild, other_tree_dict, grandchild.keys_to_my_children)
-
-    def find_split_point(text, delimiters):
-        if not delimiters:
-            return len(text) // 2
-
-        # Find all matches for the delimiter regex
-        matches = list(re.finditer(delimiters, text))
-
-        if not matches:
-            return None
-
-        # Find the match closest to the middle of the string
-        mid = len(text) // 2
-        best_match = min(matches, key=lambda m: abs(m.start() - mid))
-
-        return best_match.start()
-
     # add the delimiter frequencies back into the suffix tree's storage
     def add_delimiters_to_tree(self, text="", delimiters=None):
         # # WARNING: THIS DEFEATS THE PURPOSE OF THE PARALLELIZATION, BRINGS T(n) TO O(n)
@@ -304,7 +233,7 @@ class SuffixNode:
             for key in delimiter_counts.keys()
         })
 
-    def base_build_tree(text="", delimiter_regex=r"\n"):
+    def build_tree(text="", delimiter_regex=r"\n"):
         # create a store for the tree nodes
         flat_tree_store = FlatTreeStore(child_dict={
             letter: SuffixNode(suffix=letter, token=letter) for letter in set(text)
@@ -338,51 +267,6 @@ class SuffixNode:
 
         return suffix_tree
 
-    def parallelized_build_tree(text, delimiters=None, delimiter_regex=r"\n"):
-        if len(text) == 0:
-            return SuffixNode()
-
-        # Find the best split point using delimiters
-        split_point = SuffixNode.find_split_point(text, delimiter_regex)
-
-        if debugging_verbosity["SuffixNode"]["parallel"] > 0:
-            print(f"Split text: {[text[:split_point], text[split_point:]]}")
-
-        # if the text has been split down to the size of a word
-        if split_point == None or split_point == 0 or split_point == len(text) - 1:
-            if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-                print("Leaf detected...")
-            root = SuffixNode()
-            # set the root of the flat tree store to the initial SuffixNode pointing to it
-            root.flat_tree_store.root = root
-
-            if debugging_verbosity["SuffixNode"]["parallel"] > 0:
-                print(f"Building suffix tree for '{text}'...")
-
-            root.add_all_suffixes(text)
-
-            return root
-
-        left_half = text[:split_point]
-        right_half = text[split_point + 1:]
-
-        if debugging_verbosity["SuffixNode"]["parallel"] > 0:
-            print(f"left_half: {left_half}")
-            print(f"left_half: {right_half}")
-
-        left_tree = SuffixNode.parallelized_build_tree(left_half,
-                                                       delimiters=delimiters,
-                                                       delimiter_regex=delimiter_regex)
-        right_tree = SuffixNode.parallelized_build_tree(right_half,
-                                                        delimiters=delimiters,
-                                                        delimiter_regex=delimiter_regex)
-
-        left_tree.merge_trees(right_tree, 0)
-
-        if debugging_verbosity["SuffixNode"]["parallel"] > 1:
-            print()
-
-        return left_tree
 
     def prune_tree(self, threshold=2, indent=0):
         # If the node has no children (ie it's a leaf), return
@@ -447,8 +331,7 @@ class SuffixNode:
 def get_suffix_tree(text,
                     threshold,
                     delimiters=None,
-                    tree=None,
-                    parallelize=True):
+                    tree=None):
     # use the tree option in case a previous tree is to be pruned further
     suffix_tree = tree
     if suffix_tree is None:
@@ -458,17 +341,8 @@ def get_suffix_tree(text,
 
         delimiter_regex = compile_regex(delimiters)
 
-        if parallelize:
-            print("Running SuffixNode.parallelized_build_tree()...")
-            suffix_tree = SuffixNode.parallelized_build_tree(text,
-                                                             delimiters=delimiters,
-                                                             delimiter_regex=delimiter_regex)
-            # set the root of the flat tree store to the initial SuffixNode pointing to it
-            suffix_tree.flat_tree_store.root = suffix_tree
-
-        else:
-            print("Running suffix_tree.base_build_tree()...")
-            suffix_tree = SuffixNode.base_build_tree(text, delimiter_regex=delimiter_regex)
+        print("Running suffix_tree.build_tree()...")
+        suffix_tree = SuffixNode.build_tree(text, delimiter_regex=delimiter_regex)
 
         if debugging_verbosity["SuffixNode"]["general"] > 1:
             suffix_tree.print_tree()

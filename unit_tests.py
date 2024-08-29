@@ -87,30 +87,6 @@ class SuffixTests(unittest.TestCase):
         for node in great_grandchildren:
             self.assertEqual(node.frequency, 1)
 
-    def test_merge_trees(self):
-        tree1 = SuffixNode()
-        tree1.flat_tree_store.root = tree1
-        tree1.add_all_suffixes("abc")
-        tree1.add_all_suffixes("def")
-
-        tree2 = SuffixNode()
-        tree2.flat_tree_store.root = tree2
-        tree2.add_all_suffixes("abc")
-        tree2.add_all_suffixes("ghi")
-
-        tree1.merge_trees(tree2)
-
-        # Check merged structure
-        for character in set("abcdefghi"):
-            self.assertIn(character, tree1.keys_to_my_children)
-            self.assertIn(character, tree1.flat_tree_store.child_dict)
-
-        # Check frequencies
-        for character in set("abc"):
-            self.assertEqual(tree1.flat_tree_store.child_dict[character].frequency, 2)
-        for character in set("defghi"):
-            self.assertEqual(tree1.flat_tree_store.child_dict[character].frequency, 1)
-
     def test_prune_tree(self):
         root = SuffixNode()
         root.flat_tree_store.root = root
@@ -147,17 +123,6 @@ class SuffixTests(unittest.TestCase):
         actual_tokens = {"a", "d", "abc", "def"}
         self.assertEqual(tokens, actual_tokens)
 
-    def test_find_split_point(self):
-        text = "Hello world! This is a test."
-        test_delimiters = r"[.!?]"
-        split_point = SuffixNode.find_split_point(text, test_delimiters)
-        self.assertEqual(split_point, 11)  # Index of '!'
-
-        # Test with no delimiters
-        text = "abcdefghijklmnop"
-        split_point = SuffixNode.find_split_point(text, "")
-        self.assertEqual(split_point, 8)  # Middle of the string
-
     def test_add_delimiters_to_tree(self):
         root = SuffixNode()
         root.flat_tree_store.root = root
@@ -187,33 +152,20 @@ class SuffixTests(unittest.TestCase):
         self.assertEqual(tree.flat_tree_store.child_dict["g"].frequency, 2)
 
     def test_build_trees(self):
-        trees = [SuffixNode.base_build_tree(text=self.test_text, delimiter_regex=compile_regex(self.delimiters)),
-                 SuffixNode.parallelized_build_tree(text=self.test_text,
-                                                    delimiters=self.delimiters,
-                                                    delimiter_regex=compile_regex(self.delimiters))]
+        tree = SuffixNode.build_tree(text=self.test_text, delimiter_regex=compile_regex(self.delimiters))
 
-        for i in range(len(trees)):
-            print(f"Testing tree {i} in 'trees'...")
-            self.assertIsInstance(trees[i], SuffixNode)
-            self.check_built_tree(trees[i], self.test_text)
+        self.assertIsInstance(tree, SuffixNode)
+        self.check_built_tree(tree, self.test_text)
 
     def test_get_suffix_tree(self):
         base_token_set = {'gabba', 'o', 'babab', 'ba', 'b', 'abab', 'a',
                           'y', 'ab', 'abba', ' ', 'bab', '\n', 'g', 'bba'}
 
         print("Testing base approach...")
-        series_suffix_tree, _ = get_suffix_tree(text=self.test_text,
+        suffix_tree, _ = get_suffix_tree(text=self.test_text,
                                                 threshold=self.threshold,
-                                                delimiters=self.delimiters,
-                                                parallelize=False)
-        token_set = set(series_suffix_tree.flat_tree_store.child_dict.keys())
-        self.assertEqual(token_set, base_token_set)
-
-        print("\nTesting parallelized approach...")
-        parallel_suffix_tree, _ = get_suffix_tree(text=self.test_text, threshold=self.threshold,
-                                                  delimiters=self.delimiters,
-                                                  parallelize=True)
-        token_set = set(parallel_suffix_tree.flat_tree_store.child_dict.keys())
+                                                delimiters=self.delimiters)
+        token_set = set(suffix_tree.flat_tree_store.child_dict.keys())
         self.assertEqual(token_set, base_token_set)
 
 
@@ -224,26 +176,15 @@ class FlatTreeNodeTests(unittest.TestCase):
         self.threshold = 2
 
     def test_tokenize(self):
-        base_token_set = {'gabba', 'o', 'babab', 'ba', 'b', 'abab', 'a',
-                          'y', 'ab', 'abba', ' ', 'bab', '\n', 'g', 'bba'}
         actual_tokenization = ['abba', 'babab', 'ba', ' ', 'y', 'o', 'gabba', 'gabba']
 
         print("Testing base approach...")
-        series_suffix_tree, _ = get_suffix_tree(text=self.test_text,
+        suffix_tree, _ = get_suffix_tree(text=self.test_text,
                                                 threshold=self.threshold,
-                                                delimiters=self.delimiters,
-                                                parallelize=False)
-        series_tokenization = series_suffix_tree.flat_tree_store.tokenize(self.test_text, len(self.test_text) - 1)
-        self.assertEqual(series_tokenization, actual_tokenization)
+                                                delimiters=self.delimiters)
+        tokenization = suffix_tree.flat_tree_store.tokenize(self.test_text, len(self.test_text) - 1)
+        self.assertEqual(tokenization, actual_tokenization)
 
-        print()
-        print("Testing parallel approach...")
-        parallel_suffix_tree, _ = get_suffix_tree(text=self.test_text,
-                                                  threshold=self.threshold,
-                                                  delimiters=self.delimiters,
-                                                  parallelize=True)
-        parallel_tokenization = parallel_suffix_tree.flat_tree_store.tokenize(self.test_text, len(self.test_text) - 1)
-        self.assertEqual(parallel_tokenization, actual_tokenization)
 
 
 if __name__ == "__main__":

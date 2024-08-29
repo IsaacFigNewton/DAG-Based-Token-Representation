@@ -36,15 +36,13 @@ def run_test(text,
              min_freq,
              delimiters=None,
              tree=None,
-             parallelize=True,
              num_graphs_to_plot=1):
 
     start_time = time.time()
     suffix_tree, tokenizations[(text, min_freq)] = get_suffix_tree(text,
                                                                    min_freq,
                                                                    delimiters=delimiters,
-                                                                   tree=tree,
-                                                                   parallelize=parallelize)
+                                                                   tree=tree)
 
     if debugging_verbosity["SuffixNode"]["general"] > 0:
         print("Modified suffix tree composed in ", time.time() - start_time, " seconds.")
@@ -95,7 +93,6 @@ def run_tests():
                                                                           min_freq=min_freq,
                                                                           delimiters=delimiters,
                                                                           tree=prev_trees[i],
-                                                                          parallelize=parallelize_composition,
                                                                           num_graphs_to_plot=num_graphs_to_plot)
                 num_graphs_to_plot -= 1
                 mean_time += new_time
