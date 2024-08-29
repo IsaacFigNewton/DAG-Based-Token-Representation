@@ -7,10 +7,10 @@ debugging_verbosity = {
         "general": 0,
         "parallel": 0,
         "series": 0,
-        "pruning": 1
+        "pruning": 0
     },
     "DAGNode": 0,
-    "FlatTreeStore": 2
+    "FlatTreeStore": 0
 }
 
 # freq_range = range(50, 1050, 50)

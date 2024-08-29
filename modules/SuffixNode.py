@@ -146,13 +146,21 @@ class SuffixNode:
             else:
                 child_suffix = child.token
 
-            min_len = min(len(suffix), len(child.suffix))
+            min_len = min(len(suffix), len(child_suffix))
             i = 0
             while i < min_len and suffix[i] == child_suffix[i]:
                 i += 1
 
             # If there is a common prefix
-            if i > 0:
+            if doSuffix and i > 0:
+                return i, child_token
+            elif self.token is None\
+                    and not doSuffix\
+                    and i > 0:
+                return i, child_token
+            elif self.token is not None\
+                    and not doSuffix\
+                    and i > len(self.token):
                 return i, child_token
 
         return -1, None

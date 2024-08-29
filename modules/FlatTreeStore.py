@@ -31,24 +31,31 @@ class FlatTreeStore:
         current_node = self.root
 
         # add the token to the tokenization list
-        def add_token():
+        def add_token(token):
             nonlocal text, current_node, tokenization
-            tokenization.append(current_node.token)
-            text = text[len(current_node.token):]
+            tokenization.append(token)
+            text = text[len(token):]
             current_node = self.root
 
+        prev_token = None
         while len(text) > 0:
             split_index, child_token = current_node.longest_common_prefix(text, doSuffix=False)
-            print(split_index, child_token)
+            if debugging_verbosity["FlatTreeStore"] > 1:
+                print(split_index, child_token)
 
+            # if the max token length has been exceeded
+            if split_index > max_token_len:
+                # add the second-longest token
+                add_token(prev_token)
             # if there's a child of the current node with a shared prefix
-            if split_index > 0:
+            elif split_index > 0:
                 # move to the next child
+                prev_token = child_token
                 current_node = self.child_dict[child_token]
             # if there's no common prefix
             else:
                 # add a token and reset the token pointers
-                add_token()
+                add_token(current_node.token)
 
         if debugging_verbosity["FlatTreeStore"] > 1:
             print(tokenization)

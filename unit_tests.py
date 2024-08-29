@@ -163,8 +163,8 @@ class SuffixTests(unittest.TestCase):
 
         print("Testing base approach...")
         suffix_tree, _ = get_suffix_tree(text=self.test_text,
-                                                threshold=self.threshold,
-                                                delimiters=self.delimiters)
+                                         threshold=self.threshold,
+                                         delimiters=self.delimiters)
         token_set = set(suffix_tree.flat_tree_store.child_dict.keys())
         self.assertEqual(token_set, base_token_set)
 
@@ -180,10 +180,34 @@ class FlatTreeNodeTests(unittest.TestCase):
 
         print("Testing base approach...")
         suffix_tree, _ = get_suffix_tree(text=self.test_text,
-                                                threshold=self.threshold,
-                                                delimiters=self.delimiters)
+                                         threshold=self.threshold,
+                                         delimiters=self.delimiters)
         tokenization = suffix_tree.flat_tree_store.tokenize(self.test_text, len(self.test_text) - 1)
         self.assertEqual(tokenization, actual_tokenization)
+
+
+class CompositionDAGNodeTests(unittest.TestCase):
+    def setUp(self):
+        self.test_text = "abbabababba yogabbagabba"
+        self.delimiters = {" ", "\n"}
+        self.threshold = 2
+        self.suffix_tree, _ = get_suffix_tree(text=self.test_text,
+                                              threshold=self.threshold,
+                                              delimiters=self.delimiters)
+
+    def test_add_edge(self):
+        # child node
+        child_node = CompositionDAGNode(token="child_token", flat_tree_store=self.flat_tree_store,
+                                        dag_store=self.dag_store)
+
+
+    def test_build_subgraph(self, build_subgraph):
+        # suffix_node and its flat_tree_store
+        self.suffix_tree
+
+    def test_suffix_tree_to_dag(self):
+        # suffix_tree and its methods
+        self.suffix_tree
 
 
 
