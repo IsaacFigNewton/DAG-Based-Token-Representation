@@ -4,6 +4,7 @@ import urllib.request as url
 from modules.SuffixNode import *
 from modules.CompositionDAGNode import *
 from utils.util import *
+from utils.figures import *
 
 
 class SuffixTests(unittest.TestCase):
@@ -209,9 +210,10 @@ class CompositionDAGNodeTests(unittest.TestCase):
         test_url = "https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt"
         with url.urlopen(test_url) as f:
             text = f.read().decode('utf-8')
-        self.test_text = text
+        edge_ptr = ";"
+        self.test_text = text.replace(edge_ptr, "")
         self.delimiters = {"\n"}
-        self.threshold = 50
+        self.threshold = 2
         self.suffix_tree, _ = get_suffix_tree(text=self.test_text,
                                               threshold=self.threshold,
                                               delimiters=self.delimiters)
@@ -220,8 +222,18 @@ class CompositionDAGNodeTests(unittest.TestCase):
         # start_time = time.time()
         dag.suffix_tree_to_dag(self.suffix_tree)
 
-        dag.export_dag("bee_movie.csv")
+        # dag.export_dag(f"bee_movie min-freq={self.threshold}.csv")
+        dag.export_dag(f"bee-movie text-patterns min-freq={self.threshold}.csv",
+                       "patterns")
 
+        if len(dag.dag_store.vertices.keys()) < 50:
+            plot_dag(dag.dag_store,
+                     A=dag.dag_store.adjacency_matrix,
+                     k=4,
+                     scaling=25)
+
+        patterns_sample = {pattern: str(tokens)[:50]+"\n" for pattern, tokens in dag.dag_store.pattern_map.items()}
+        print(f"Pattern set:\n{patterns_sample}")
 
 if __name__ == "__main__":
     unittest.main()
