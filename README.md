@@ -1,10 +1,10 @@
 <h1>DAG-Based Tokenizer/Embedder</h1>
-<a href="https://research.google/blog/a-fast-wordpiece-tokenization-system/">Google does something similar to this, but better and without the embedding step</a>
 
 <br>
 <br>
 
 <h1>Encoding Approach Overview (Refactoring in progress)</h1>
+<h2>TODO: Update the readme with the current design</h2>
 
 <h2>Create Storage Objects:</h2>
   
@@ -34,7 +34,7 @@
     <ul>
       <li>Update the counts for all component nodes/tokens as the suffix path is traversed in the:
         <ul>
-          <li>2D dictionary</li>
+          <li>Dictionary of token obje</li>
           <li>Token frequencies dict</li>
         </ul>
       </li>
@@ -51,7 +51,18 @@
   </li>
 </ol>
 
-<h2>Convert the Suffix Tree</h2>
+
+<h2>Build DAG</h2>
+
+<ol>
+  <li>See main design doc for process</li>
+
+<h1>Directions:</h1>
+
+<h2>Embedding:</h2>
+<p>After this N-D context tensor has been created, let the vectorization of the entire text be represented with the N-1-D slice corresponding to the current context summed with reducing weighted slices ending with the current token before and after the current context, similar to backpropagation in a NN.</p>
+
+<h3>Convert the Suffix Tree</h3>
 <ol>
   <li>Convert the 2D dict of tokens and their subtokens’ frequencies to a sparse tensor representing the corresponding counts of all tokens.</li>
   <li>Create a 2D diagonal tensor of all the tokens’ global frequencies, where (i, i) is the global occurrence count for token i.</li>
@@ -63,7 +74,7 @@
   </li>
 </ol>
 
-<h2>Create Transition Probability Tensor</h2>
+<h3>Create Transition Probability Tensor</h3>
 <ol>
   <li>Create a new sparse N-D tensor to represent the transition probabilities between tokens, where N is the maximum context length.</li>
   <li>Using the token ⇒ token number map in conjunction with this new tensor and the suffix tree, run through the text again.</li>
@@ -78,12 +89,7 @@
   </li>
 </ol>
 
-<h2>Directions:</h2>
-
-<h3>Embedding:</h3>
-<p>After this N-D context tensor has been created, let the vectorization of the entire text be represented with the N-1-D slice corresponding to the current context summed with reducing weighted slices ending with the current token before and after the current context, similar to backpropagation in a NN.</p>
-
-<h3>Compression:</h3>
+<h2>Compression:</h2>
 <p>Represent each token sequence based on the start of the path slice in the transition probabilities tensor. Let subsequent tokens after the first be predicted based on the likeliest sequence of token selections for arriving at the designated context level.</p>
 
 <p><strong>Example:</strong> For a tensor with max context length=3 and 3 tokens, abc, d, e, and z:
@@ -91,3 +97,8 @@
   <br>Since <code>e</code> normally follows <code>abcd</code>, not <code>z</code>, you’d have to start at the slice involving that unlikely transition.
   <br><code>“abcdz” ⇒ (0, 1, 2)	⇒ (0 (using this to represent token tensor embedding for brevity), 1), (2, 0)</code>
 </p>
+
+<h1>Sauces</h1>
+<ul>
+  <li><a href="https://research.google/blog/a-fast-wordpiece-tokenization-system/">Wordpiece</a></li>
+</ul>
