@@ -1,10 +1,10 @@
 <h1>DAG-Based Tokenizer/Embedder</h1>
-<a href="https://research.google/blog/a-fast-wordpiece-tokenization-system/">Google does something similar to this, but better and without the embedding step</a>
 
 <br>
 <br>
 
 <h1>Encoding Approach Overview (Refactoring in progress)</h1>
+<h2>TODO: Update the readme with the current design</h2>
 
 <h2>Create Storage Objects:</h2>
   
@@ -35,7 +35,7 @@
     <ul>
       <li>Update the counts for all component nodes/tokens as the suffix path is traversed in the:
         <ul>
-          <li>2D dictionary</li>
+          <li>Dictionary of token obje</li>
           <li>Token frequencies dict</li>
         </ul>
       </li>
@@ -51,6 +51,9 @@
     </ul>
   </li>
 </ol>
+
+<h2>Build DAG</h2>
+See main design doc for process
 
 <hr>
 
@@ -68,7 +71,7 @@
   </li>
 </ol>
 
-<h2>Create Transition Probability Tensor</h2>
+<h3>Create Transition Probability Tensor</h3>
 <ol>
   <li>Create a new sparse N-D tensor to represent the transition probabilities between tokens, where N is the maximum context length.</li>
   <li>Using the token ⇒ token number map in conjunction with this new tensor and the suffix tree, run through the text again.</li>
@@ -82,8 +85,6 @@
     </ul>
   </li>
 </ol>
-
-<hr>
 
 <h2>More Directions:</h2>
 
@@ -99,3 +100,8 @@
   <br>Since <code>e</code> normally follows <code>abcd</code>, not <code>z</code>, you’d have to start at the slice involving that unlikely transition.
   <br><code>“abcdz” ⇒ (0, 1, 2)	⇒ (0 (using this to represent token tensor embedding for brevity), 1), (2, 0)</code>
 </p>
+
+<h1>Sauces</h1>
+<ul>
+  <li><a href="https://research.google/blog/a-fast-wordpiece-tokenization-system/">Wordpiece</a></li>
+</ul>

@@ -13,9 +13,11 @@ class CompositionDAGNode:
                  frequency=0,
                  parents=None,
                  flat_tree_store=None,
-                 dag_store=None):
+                 dag_store=None,
+                 pattern=None):
         self.token = token
         self.frequency = frequency
+        self.pattern = pattern
 
         if parents is None:
             parents = list()
@@ -42,15 +44,20 @@ class CompositionDAGNode:
 
         # Add this token to the list of parents composing the larger token
         child.parents.append(self)
+        self.dag_store.add_edge(self, child)
 
-        # Add an edge to the edge list, using the current token's position
-        #   in the child token as the edge weight
-        self.dag_store.edge_set.add((self.token, child.token, len(child.parents) - 1))
-        if self.token is not None and child.token is not None:
-            self \
-                .dag_store \
-                .adjacency_matrix[
-                self.dag_store.token_index_map[self.token], self.dag_store.token_index_map[child.token]] = 1
+    def get_pattern(self, tokenization):
+        # map each token to a value based on its order of occurrence
+        component_tokens = dict()
+        i = 0
+        for token in tokenization:
+            if token not in component_tokens:
+                component_tokens[token] = str(i)
+                i += 1
+
+        # add the pattern to the current node and the pattern store
+        self.pattern = " ".join([component_tokens[token] for token in tokenization])
+        self.dag_store.add_pattern(self.pattern, self.token)
 
     # since this is recursively saving smaller tokens, it's basically depth-first
     def build_subgraph(self, suffix_node=None, suffix_tokenization=[]):
@@ -92,7 +99,8 @@ class CompositionDAGNode:
             print("Building DAG from modified suffix tree...")
 
         all_tokens = suffix_tree.get_tokens()
-        print(f"Token set: {all_tokens}")
+        if debugging_verbosity["DAGNode"] > -1:
+            print(f"Token set: {str(all_tokens)[:100]}")
 
         # create a dict for mapping tokens to indices in the adjacency matrix
         token_list = list(all_tokens)
@@ -127,6 +135,7 @@ class CompositionDAGNode:
 
             # if it's the root of the base dag or one of the top-level tokens, just add it to the vertex dict
             if current_suffix_node.parent is None or current_suffix_node.parent.token is None:
+                vert.get_pattern([vert.token])
                 vertices[current_suffix_node.token] = vert
                 # add an edge from the base graph's root to the top-level token
                 self.add_edge(vert)
@@ -135,8 +144,11 @@ class CompositionDAGNode:
                 # tokenize the current token using the largest available smaller tokens
                 current_tokenization = current_suffix_node.flat_tree_store.tokenize(current_suffix_node.token,
                                                                                     len(current_suffix_node.token) - 1)
+
                 temp_vert = vert
                 temp_vert, additional_vertices = temp_vert.build_subgraph(current_suffix_node, current_tokenization)
+                temp_vert.get_pattern(current_tokenization)
+
                 vertices[vert.token] = temp_vert
                 vertices.update(additional_vertices)
 
@@ -156,6 +168,22 @@ class CompositionDAGNode:
         self.dag_store.edge_set = {(pre, cum, pos) for pre, cum, pos in self.dag_store.edge_set if pre is not None}
 
     # converts the edge set and vertex set to a file format for Gephi
-    def dag_to_file(self):
-        print(f"Vertex set:\n{self.dag_store.vertices}")
-        print(f"Edge set:\n{self.dag_store.edge_set}")
+    def export_dag(self, filename, output):
+        path = "graphs/" + filename
+        # clear the file
+        with open(path, 'w') as f:
+            f.write("")
+
+        vertices = self.dag_store.vertices
+        lines = set()
+        with open(path, 'a') as f:
+            for edge in self.dag_store.edge_set:
+                if output == "tokens":
+                    lines.add("{edge[0]};{edge[1]}")
+                else:
+                    vert0 = vertices[edge[0]]
+                    vert1 = vertices[edge[1]]
+                    if output == "patterns":
+                        lines.add(f"{vert0.pattern};{vert1.pattern}")
+
+            f.write("\n".join(lines))
