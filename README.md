@@ -24,6 +24,7 @@
   </li>
 </ul>
 
+
 <h2>Build a Modified Suffix Tree</h2>
 
 <ol>
@@ -51,6 +52,10 @@
   </li>
 </ol>
 
+<hr>
+
+<h1>Future modifications</h1>
+<p>Note: The following hasn't been implemented yet, but are some directions I might take the project.</p>
 <h2>Convert the Suffix Tree</h2>
 <ol>
   <li>Convert the 2D dict of tokens and their subtokens’ frequencies to a sparse tensor representing the corresponding counts of all tokens.</li>
@@ -78,12 +83,15 @@
   </li>
 </ol>
 
-<h2>Directions:</h2>
+<hr>
+
+<h2>More Directions:</h2>
 
 <h3>Embedding:</h3>
 <p>After this N-D context tensor has been created, let the vectorization of the entire text be represented with the N-1-D slice corresponding to the current context summed with reducing weighted slices ending with the current token before and after the current context, similar to backpropagation in a NN.</p>
 
 <h3>Compression:</h3>
+<p>Treat the token DAG as a Hopfield Network</p>
 <p>Represent each token sequence based on the start of the path slice in the transition probabilities tensor. Let subsequent tokens after the first be predicted based on the likeliest sequence of token selections for arriving at the designated context level.</p>
 
 <p><strong>Example:</strong> For a tensor with max context length=3 and 3 tokens, abc, d, e, and z:
