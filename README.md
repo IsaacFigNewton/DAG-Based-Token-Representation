@@ -1,4 +1,4 @@
-<h1>DAG-Based Tokenizer/Embedder</h1>
+<h1>DAG-Based Tokenizer</h1>
 
 <br>
 <br>
