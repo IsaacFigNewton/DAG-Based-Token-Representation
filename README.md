@@ -52,6 +52,20 @@
   </li>
 </ol>
 
+<h2>Directions for Future Work</h2>
+<ul>
+  <li>Add token composition likelihoods
+    <ul>
+      <li>Likely leads to some kind of Boltzmann machine</li>
+    </ul>
+  </li>
+  <li>Replace base set of primitive tokens with word tokens and their POS tags
+    <ul>
+      <li>Create PCFG by modelling POS tag/word pair composition likelihoods</li>
+    </ul>
+  </li>
+</ul>
+
 <h1>Sauces</h1>
 <ul>
   <li><a href="https://research.google/blog/a-fast-wordpiece-tokenization-system/">Wordpiece</a></li>
