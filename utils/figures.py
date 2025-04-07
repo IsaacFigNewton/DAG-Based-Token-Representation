@@ -71,6 +71,7 @@ def plot_dag(dag_store, A=None, scaling=50, edge_width=1, k=2):
                            pos,
                            width=edge_width,
                            arrowstyle='-|>',
+                           arrows=True,
                            connectionstyle="arc3,rad=0.2")
     # Draw node labels
     nx.draw_networkx_labels(G, pos, font_size=font_size, font_family="sans-serif")
