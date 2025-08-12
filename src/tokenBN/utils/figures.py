@@ -1,5 +1,3 @@
-import os
-import sys
 from scipy.sparse.csgraph import connected_components
 import scipy.sparse as sp
 import tensorflow as tf
@@ -8,10 +6,10 @@ import networkx as nx
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from .vector_embedding import *
+from tokenBN.config import DEBUG_VERBOSITY
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
-from config import *
+from tokenBN.utils.vector_embedding import *
+from tokenBN.config import *
 
 
 def plot_embeddings(embeddings, max_plots):
@@ -34,10 +32,10 @@ def plot_embeddings(embeddings, max_plots):
 
 
 def plot_dag(dag_store, A=None, scaling=50, edge_width=1, k=2):
-    if debugging_verbosity["DAGNode"] > 1:
+    if DEBUG_VERBOSITY["DAGNode"] > 1:
         print("Adjacency matrix:\n", A)
 
-    if debugging_verbosity["DAGNode"] > 0 and A is None:
+    if DEBUG_VERBOSITY["DAGNode"] > 0 and A is None:
         print("Adjacency matrix was empty/not defined")
 
     # Create a directed graph from the adjacency matrix

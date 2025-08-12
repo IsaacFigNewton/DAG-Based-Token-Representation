@@ -1,7 +1,6 @@
 import unittest
-import urllib.request as url
 
-from tokenBN.SuffixNode import *
+from tokenBN.SuffixNode import SuffixNode
 
 class TestFlatTreeNode(unittest.TestCase):
     def setUp(self):

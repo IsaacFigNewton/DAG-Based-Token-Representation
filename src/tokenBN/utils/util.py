@@ -1,10 +1,7 @@
+from typing import Set
 import re
 
-
-def count_occurrences(text, delimiters=None):
-    if not delimiters:
-        delimiters = set()
-
+def count_occurrences(text, delimiters: Set[str]):
     # Initialize a dictionary to keep track of occurrences
     occurrences = {s: 0 for s in delimiters}
 
@@ -16,10 +13,7 @@ def count_occurrences(text, delimiters=None):
     return occurrences
 
 
-def compile_regex(delimiters=None):
-    if not delimiters:
-        delimiters = set()
-
+def compile_regex(delimiters:Set[str]) -> str:
     # Join the strings with '|' and escape special characters
     regex_pattern = "|".join(re.escape(s) for s in delimiters)
 

@@ -1,27 +1,27 @@
-import os
-import sys
 import re
-from typing import List, Tuple, Dict
+from typing import List
 
-from .FlatTreeStore import *
+from tokenBN.config import DEBUG_VERBOSITY
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config import *
-from .utils.util import *
+from tokenBN.FlatTreeStore import FlatTreeStore
+from tokenBN.utils.util import *
 
 
 class SuffixNode:
     def __init__(self,
-                 suffix=None,
-                 token=None,
-                 frequency=0,
-                 parent=None,
-                 keys_to_my_children=None,
-                 flat_tree_store=None,
-                 threshold:int=2):
+            suffix=None,
+            token=None,
+            frequency:int=0,
+            parent=None,
+            keys_to_my_children=None,
+            flat_tree_store=None,
+            delimiters: Set[str] = set(),
+            threshold: int = 2,
+        ):
         self.suffix = suffix
         self.token = token
         self.frequency = frequency
+        self.delimiters = delimiters
         self.threshold = threshold
 
         self.parent = parent
@@ -41,23 +41,19 @@ class SuffixNode:
 
     @classmethod
     def from_text(cls,
-            text:str,
-            threshold:int = 2,
-            delimiters: List[str] = ["\n", "."]
+            text: str,
+            threshold: int,
+            delimiters: List[str]
         ) -> 'SuffixNode':
-        if debugging_verbosity["SuffixNode"]["general"] > -1:
-            print("Building modified suffix tree...")
-
-        delimiter_regex = compile_regex(delimiters)
-
-        if debugging_verbosity["SuffixNode"]["general"] > -1:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > -1:
             print("Running suffix_tree.build_tree()...")
         tree = SuffixNode.build_tree(
-            text,
-            delimiter_regex=delimiter_regex
+            text=text,
+            delimiters=delimiters,
+            threshold=threshold
         )
 
-        if debugging_verbosity["SuffixNode"]["general"] > 1:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
             tree.print_tree()
         
         tree.clean()
@@ -65,10 +61,11 @@ class SuffixNode:
     
     @classmethod
     def build_tree(cls,
-            text="",
-            delimiter_regex=r"\n",
-            threshold:int=2,
+            text: str,
+            delimiters: Set[str],
+            threshold: int,
         ) -> 'SuffixNode':
+
         # create a store for the tree nodes
         flat_tree_store = FlatTreeStore()
         # child_dict={
@@ -82,48 +79,49 @@ class SuffixNode:
         suffix_tree = SuffixNode(
             flat_tree_store=flat_tree_store,
             keys_to_my_children=set(flat_tree_store.child_dict.keys()),
+            delimiters=delimiters,
             threshold=threshold
         )
         # set the root of the flat tree store to the initial SuffixNode pointing to it
         suffix_tree.flat_tree_store.root = suffix_tree
 
         # split the text into blocks, where each block is an independent clause
-        clauses = re.split(delimiter_regex, text)
+        clauses = re.split(compile_regex(delimiters), text)
         # print(set(clauses))
 
-        if debugging_verbosity["SuffixNode"]["general"] > 1:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
             print("Initial suffix tree (just alphabet):")
             suffix_tree.print_tree()
 
         for string in clauses:
-            if debugging_verbosity["SuffixNode"]["general"] > 0:
+            if DEBUG_VERBOSITY["SuffixNode"]["general"] > 0:
                 print(f"Building suffix tree for '{string}'...")
 
             suffix_tree.add_all_suffixes(string)
 
-        if debugging_verbosity["SuffixNode"]["general"] > 1:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
             print(suffix_tree.get_tokens())
 
         return suffix_tree
 
     def clean(self):
-        if debugging_verbosity["SuffixNode"]["general"] > -1:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > -1:
             print("Pruning modified suffix tree...")
         self.prune_tree()
-        self.add_delimiters_to_tree()
+        self.add_delimiters_to_tree(self.delimiters)
 
-        if debugging_verbosity["SuffixNode"]["pruning"] > 0:
+        if DEBUG_VERBOSITY["SuffixNode"]["pruning"] > 0:
             self.print_tree()
 
-        if debugging_verbosity["SuffixNode"]["general"] > 0:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > 0:
             print("Getting token set...")
 
-    def print_tree(self, indent=0):
+    def print_tree(self, indent:int=0):
         my_children = {self.flat_tree_store.child_dict[key] for key in self.keys_to_my_children}
 
         # Iterate over the child.suffixes (features) in the tree
         for child in my_children:
-            if any(debugging_verbosity["SuffixNode"]) > 0:
+            if any(DEBUG_VERBOSITY["SuffixNode"]) > 0:
                 print(f"{' ' * indent} '{child.suffix}', '{child.token}', {child.frequency}")
             else:
                 print(f"{' ' * indent} '{child.suffix}': {child.frequency}")
@@ -131,7 +129,7 @@ class SuffixNode:
             if isinstance(child, SuffixNode):
                 child.print_tree(indent=indent + 4)
             else:
-                if any(debugging_verbosity["SuffixNode"]) > 0:
+                if any(DEBUG_VERBOSITY["SuffixNode"]) > 0:
                     print(f"{' ' * (indent + 4)} '{child.suffix}', '{child.token}', {child.frequency}")
                 else:
                     print(f"{' ' * (indent + 4)} '{child.suffix}': {child.frequency}")
@@ -143,14 +141,16 @@ class SuffixNode:
             self.token = self.suffix
 
     def add_child(self, suffix):
-        if debugging_verbosity["SuffixNode"]["general"] > 1:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
             print(f"Creating a new child with suffix '{suffix}'")
 
-        child = SuffixNode(suffix=suffix,
-                           token=suffix,
-                           frequency=1,
-                           parent=self,
-                           flat_tree_store=self.flat_tree_store)
+        child = SuffixNode(
+            suffix=suffix,
+            token=suffix,
+            frequency=1,
+            parent=self,
+            flat_tree_store=self.flat_tree_store
+        )
 
         child.set_token()
 
@@ -158,26 +158,35 @@ class SuffixNode:
         self.keys_to_my_children.add(child.token)
         self.flat_tree_store.child_dict[child.token] = child
 
-    def create_split_nodes(self, child, old_suffix, new_suffix, split_node):
+    def create_split_nodes(self,
+            child,
+            old_suffix,
+            new_suffix,
+            split_node
+        ):
         # Create the old child (original suffix) under the split node
-        old_child = SuffixNode(suffix=old_suffix,
-                               frequency=child.frequency - 1,
-                               parent=split_node,
-                               flat_tree_store=self.flat_tree_store,
-                               keys_to_my_children=child.keys_to_my_children)
+        old_child = SuffixNode(
+            suffix=old_suffix,
+            frequency=child.frequency - 1,
+            parent=split_node,
+            flat_tree_store=self.flat_tree_store,
+            keys_to_my_children=child.keys_to_my_children
+        )
         old_child.set_token()
 
         # Create the new child (new suffix) under the split node
-        new_child = SuffixNode(suffix=new_suffix,
-                               frequency=1,
-                               parent=split_node,
-                               flat_tree_store=self.flat_tree_store)
+        new_child = SuffixNode(
+            suffix=new_suffix,
+            frequency=1,
+            parent=split_node,
+            flat_tree_store=self.flat_tree_store
+        )
         new_child.set_token()
 
         return old_child, new_child
 
     def split_edge(self, child, split_index, suffix):
-        if debugging_verbosity["SuffixNode"]["general"] > 1:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
             print(f"Splitting on {child.token}")
 
         # Remove the previous/original child from current node's children
@@ -194,10 +203,12 @@ class SuffixNode:
         new_suffix = suffix[split_index:]
 
         # Create the split node with the matching part of the suffix
-        split_node = SuffixNode(suffix=child.suffix[:split_index],
-                                frequency=child.frequency,
-                                parent=self,
-                                flat_tree_store=self.flat_tree_store)
+        split_node = SuffixNode(
+            suffix=child.suffix[:split_index],
+            frequency=child.frequency,
+            parent=self,
+            flat_tree_store=self.flat_tree_store
+        )
         split_node.set_token()
 
         # Add the split node to the current node's children
@@ -248,7 +259,7 @@ class SuffixNode:
         return -1, None
 
     def add_suffix(self, suffix):
-        if debugging_verbosity["SuffixNode"]["general"] > 1:
+        if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
             print(f"Current suffix: '{suffix}'")
             print(f"Children: {self.keys_to_my_children}")
 
@@ -257,7 +268,7 @@ class SuffixNode:
         if index > 0:
             child = self.flat_tree_store.child_dict[child_token]
 
-            if debugging_verbosity["SuffixNode"]["general"] > 1:
+            if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
                 print(f"Child with shared suffix: '{child.token}'")
             # Update the frequency of the child node
             child.frequency += 1
@@ -277,7 +288,7 @@ class SuffixNode:
         #   (like in the case of a divide-and-conquer approach)
         if suffix[0] not in self.flat_tree_store.root.keys_to_my_children:
             # No matching suffix, create a new child
-            if debugging_verbosity["SuffixNode"]["general"] > 1:
+            if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
                 print("Unrecognized character, adding to alphabet...")
 
             # add the new character to the alphabet child set
@@ -301,14 +312,14 @@ class SuffixNode:
                 child = self.flat_tree_store.child_dict[suffix[0]]
                 child.add_child(suffix[1:])
 
-                if debugging_verbosity["SuffixNode"]["general"] > 1:
+                if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
                     print(self.get_tokens())
 
         else:
             # No matching suffix, create a new child
             self.add_child(suffix)
 
-            if debugging_verbosity["SuffixNode"]["general"] > 1:
+            if DEBUG_VERBOSITY["SuffixNode"]["general"] > 1:
                 print(self.get_tokens())
 
         return
@@ -322,7 +333,7 @@ class SuffixNode:
             self.add_suffix(suffix)
 
     # add the delimiter frequencies back into the suffix tree's storage
-    def add_delimiters_to_tree(self, delimiters:List[str] = ["\n", "."]):
+    def add_delimiters_to_tree(self, delimiters:List[str]):
         delimiter_counts = {delimiter: 1 for delimiter in delimiters}
 
         self.keys_to_my_children.update(set(delimiter_counts.keys()))
@@ -338,7 +349,7 @@ class SuffixNode:
     def prune_tree(self, threshold=2, indent=0):
         # If the node has no children (ie it's a leaf), return
         if not self.keys_to_my_children:
-            if debugging_verbosity["SuffixNode"]["pruning"] > 1:
+            if DEBUG_VERBOSITY["SuffixNode"]["pruning"] > 1:
                 print(f"{' ' * (indent + 4)}No children for {self.token}")
             return self
 
@@ -348,7 +359,7 @@ class SuffixNode:
         for child_token in self.keys_to_my_children:
             child = self.flat_tree_store.child_dict[child_token]
 
-            if debugging_verbosity["SuffixNode"]["pruning"] > 1:
+            if DEBUG_VERBOSITY["SuffixNode"]["pruning"] > 1:
                 print(f"{' ' * indent}{child.suffix}:\tToken:\t{child.token}")
                 if child.parent is not None:
                     print(f"{' ' * indent}\tParent:\t{child.parent.token}")
@@ -375,7 +386,7 @@ class SuffixNode:
             del self.flat_tree_store.child_dict[child_token]
             dead_children.add(child_token)
 
-        if debugging_verbosity["SuffixNode"]["pruning"] > 1:
+        if DEBUG_VERBOSITY["SuffixNode"]["pruning"] > 1:
             print(self.get_tokens())
 
         return self

@@ -5,22 +5,25 @@ from typing import Dict, List, Optional, Tuple, Any
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from config import (
-    debugging_verbosity,
-    freq_range,
-    folds,
-    delimiters
-)
-from src.tokenBN.SuffixNode import SuffixNode
-from src.tokenBN.CompositionDAGNode import CompositionDAGNode
-from src.tokenBN.utils.figures import plot_dag
+from tokenBN.config import DEBUG_VERBOSITY
+
+from tokenBN.SuffixNode import SuffixNode
+from tokenBN.CompositionDAGNode import CompositionDAGNode
+from tokenBN.utils.figures import plot_dag
 
 # Constants
 TEST_URL = "https://gist.githubusercontent.com/Niximacco/6ae63abd1834485811200daefc319b40/raw/2411e31293a35f3e565f61e7490a806d4720ea7e/bee%2520movie%2520script"
-TEST_TEXT_LENGTH = 5000
-MAX_VERTICES_FOR_PLOTTING = 50
-DAG_PLOT_SCALING = 25
+TEST_TEXT_LENGTH = 200
+MAX_VERTICES_FOR_PLOTTING = 100
+DAG_PLOT_SCALING = 20
 DAG_PLOT_K = 4
+# freq_range for full script = range(50, 1050, 50)
+FREQ_RANGE = range(2, 4, 2)
+FOLDS = 2
+NUM_GRAPHS_TO_PLOT = 1
+MAX_VECTOR_PLOTS = 0
+# currently only works with single-character delimiters
+DELIMITERS = {" ", "\n"}
 
 # Global state
 tokenizations: Dict[Tuple[str, int], Any] = {}
@@ -80,7 +83,7 @@ def run_test(
         suffix_tree.clean()
     tokenizations[(text, min_freq)] = suffix_tree.get_tokens()
 
-    if debugging_verbosity["SuffixNode"]["general"] > 0:
+    if DEBUG_VERBOSITY["SuffixNode"]["general"] > 0:
         elapsed = time.time() - start_time
         print(f"Modified suffix tree composed in {elapsed:.4f} seconds.")
         suffix_tree.print_tree()
@@ -117,7 +120,7 @@ def run_tests(tests: List[str]) -> None:
     num_graphs_to_plot = 1
     prev_trees: Dict[int, Optional[Any]] = {}
 
-    for min_freq in freq_range:
+    for min_freq in FREQ_RANGE:
         print(f"Testing minimum frequency: {min_freq}")
 
         for test_idx, test_text in enumerate(tests):
@@ -125,18 +128,18 @@ def run_tests(tests: List[str]) -> None:
                 prev_trees[test_idx] = None
 
             total_time = 0.0
-            for fold in range(folds):
+            for fold in range(FOLDS):
                 execution_time, prev_trees[test_idx], _ = run_test(
                     text=test_text,
                     min_freq=min_freq,
-                    delimiters=delimiters,
+                    delimiters=DELIMITERS,
                     suffix_tree=prev_trees[test_idx],
                     num_graphs_to_plot=num_graphs_to_plot
                 )
                 num_graphs_to_plot = max(0, num_graphs_to_plot - 1)
                 total_time += execution_time
 
-            mean_time = total_time / folds
+            mean_time = total_time / FOLDS
             test_results["min frequency"].append(min_freq)
             test_results["test number"].append(test_idx)
             test_results["mean time"].append(mean_time)

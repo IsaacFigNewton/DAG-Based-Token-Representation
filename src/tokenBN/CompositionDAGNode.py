@@ -1,7 +1,7 @@
-import os
-import sys
 from collections import deque
 import scipy.sparse as sp
+
+from tokenBN.config import DEBUG_VERBOSITY
 
 from .FlatTreeStore import *
 from .DAGStore import *
@@ -95,11 +95,11 @@ class CompositionDAGNode:
 
     # do breadth-first accumulation of the suffix tree into the dag
     def suffix_tree_to_dag(self, suffix_tree):
-        if debugging_verbosity["DAGNode"] > -1:
+        if DEBUG_VERBOSITY["DAGNode"] > -1:
             print("Building DAG from modified suffix tree...")
 
         all_tokens = suffix_tree.get_tokens()
-        if debugging_verbosity["DAGNode"] > -1:
+        if DEBUG_VERBOSITY["DAGNode"] > -1:
             print(f"Token set: {str(all_tokens)[:100]}")
 
         # create a dict for mapping tokens to indices in the adjacency matrix
@@ -119,7 +119,7 @@ class CompositionDAGNode:
         suffix_node_queue.append(suffix_tree)
 
         while 0 < len(suffix_node_queue):
-            if debugging_verbosity["DAGNode"] > 1:
+            if DEBUG_VERBOSITY["DAGNode"] > 1:
                 print(f"SuffixNode DAG Queue state: {[node.token for node in suffix_node_queue]}")
 
             # get the next suffix node from the queue
@@ -154,15 +154,15 @@ class CompositionDAGNode:
 
             # add all the current node's children to the queue
             for child_token in current_suffix_node.keys_to_my_children:
-                if debugging_verbosity["DAGNode"] > 1:
+                if DEBUG_VERBOSITY["DAGNode"] > 1:
                     print(f"SuffixNode DAG Queue state: {[node.token for node in suffix_node_queue]}")
                 suffix_node_queue.append(current_suffix_node.flat_tree_store.child_dict[child_token])
 
-        if debugging_verbosity["DAGNode"] > 1:
+        if DEBUG_VERBOSITY["DAGNode"] > 1:
             print("lil adjacency matrix after processing: ", self.dag_store.adjacency_matrix)
         # convert the LIL adjacency matrix to CSR format for more efficient modification
         self.dag_store.adjacency_matrix = sp.csr_matrix(self.dag_store.adjacency_matrix)
-        if debugging_verbosity["DAGNode"] > 1:
+        if DEBUG_VERBOSITY["DAGNode"] > 1:
             print("Sparse adjacency matrix:\n", self.dag_store.adjacency_matrix)
 
         self.dag_store.edge_set = {(pre, cum, pos) for pre, cum, pos in self.dag_store.edge_set if pre is not None}

@@ -1,7 +1,9 @@
 import unittest
-import urllib.request as url
 
-from tokenBN.SuffixNode import *
+from tokenBN.config import DEBUG_VERBOSITY
+
+from tokenBN.utils.util import compile_regex
+from tokenBN.SuffixNode import SuffixNode
 
 class TestSuffixNode(unittest.TestCase):
     def setUp(self):
@@ -138,7 +140,7 @@ class TestSuffixNode(unittest.TestCase):
         self.assertEqual(space_node.frequency, 1)
 
     def check_built_tree(self, tree, text):
-        for character in set(text).difference(delimiters):
+        for character in set(text).difference(self.delimiters):
             self.assertIn(character, tree.keys_to_my_children)
             self.assertIn(character, tree.flat_tree_store.child_dict)
 
@@ -150,14 +152,20 @@ class TestSuffixNode(unittest.TestCase):
         self.assertEqual(tree.flat_tree_store.child_dict["g"].frequency, 2)
 
     def test_build_trees(self):
-        tree = SuffixNode.build_tree(text=self.test_text, delimiter_regex=compile_regex(self.delimiters))
+        tree = SuffixNode.build_tree(
+            text=self.test_text,
+            threshold=self.threshold,
+            delimiters=self.delimiters,
+        )
 
         self.assertIsInstance(tree, SuffixNode)
         self.check_built_tree(tree, self.test_text)
 
     def test_get_suffix_tree(self):
-        base_token_set = {'gabba', 'o', 'babab', 'ba', 'b', 'abab', 'a',
-                          'y', 'ab', 'abba', ' ', 'bab', '\n', 'g', 'bba'}
+        base_token_set = ({
+            'a', 'b', 'ba', 'bba', 'ab', 'abba', 'bab',
+            'abab', 'babab', ' ', 'g', 'gabba', 'o', 'y'
+        }).union(self.delimiters)
 
         print("Testing base approach...")
         suffix_tree = SuffixNode.from_text(

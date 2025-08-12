@@ -1,9 +1,4 @@
-import os
-import sys
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-from config import *
-
+from tokenBN.config import DEBUG_VERBOSITY
 
 class FlatTreeStore:
     def __init__(self, child_dict=None, root=None):
@@ -19,11 +14,11 @@ class FlatTreeStore:
         if self.root is None:
             raise ValueError("No root node provided to FlatTreeStore object")
 
-        if debugging_verbosity["FlatTreeStore"] > 1:
+        if DEBUG_VERBOSITY["FlatTreeStore"] > 1:
             print(f"Tokenizing {text}")
 
         if max_token_len < 1:
-            if debugging_verbosity["FlatTreeStore"] > 1:
+            if DEBUG_VERBOSITY["FlatTreeStore"] > 1:
                 print(f"Text was too short")
             return [text]
 
@@ -40,7 +35,7 @@ class FlatTreeStore:
         prev_token = None
         while len(text) > 0:
             split_index, child_token = current_node.longest_common_prefix(text, doSuffix=False)
-            if debugging_verbosity["FlatTreeStore"] > 1:
+            if DEBUG_VERBOSITY["FlatTreeStore"] > 1:
                 print(split_index, child_token)
 
             # if the max token length has been exceeded
@@ -57,7 +52,7 @@ class FlatTreeStore:
                 # add a token and reset the token pointers
                 add_token(current_node.token)
 
-        if debugging_verbosity["FlatTreeStore"] > 1:
+        if DEBUG_VERBOSITY["FlatTreeStore"] > 1:
             print(tokenization)
             print()
 
