@@ -5,11 +5,11 @@ import urllib.request as url
 import pandas as pd
 
 from config import *
-from modules.SuffixNode import *
-from modules.CompositionDAGNode import *
-from utils.util import *
-from utils.figures import *
-from utils.vector_embedding import *
+from src.tokenBN.SuffixNode import *
+from src.tokenBN.CompositionDAGNode import *
+from src.tokenBN.utils.util import *
+from src.tokenBN.utils.figures import *
+from src.tokenBN.utils.vector_embedding import *
 
 tokenizations = dict()
 test_results = {

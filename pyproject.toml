@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tokenBN"
+version = "0.0.1"
+description = """
+A package for building probabilistic suffix trees for a corpus,
+then restructuring the trees into Bayesian Networks of tokens.
+"""
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [
+    {name = "Isaac Rudnick"},
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "tensorflow"
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

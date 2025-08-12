@@ -4,9 +4,9 @@ import re
 
 from .FlatTreeStore import *
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from config import *
-from utils.util import *
+from .utils.util import *
 
 
 class SuffixNode:

@@ -1,10 +1,10 @@
 import unittest
 import urllib.request as url
 
-from modules.SuffixNode import *
-from modules.CompositionDAGNode import *
-from utils.util import *
-from utils.figures import *
+from src.tokenBN.SuffixNode import *
+from src.tokenBN.CompositionDAGNode import *
+from src.tokenBN.utils.util import *
+from src.tokenBN.utils.figures import *
 
 
 class SuffixTests(unittest.TestCase):
