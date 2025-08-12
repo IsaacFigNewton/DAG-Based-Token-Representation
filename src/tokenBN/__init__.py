@@ -1,4 +1,3 @@
-
 from tokenBN.SuffixNode import SuffixNode
 from tokenBN.FlatTreeStore import FlatTreeStore
 from tokenBN.DAGStore import DAGStore

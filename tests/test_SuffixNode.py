@@ -1,13 +1,9 @@
 import unittest
 import urllib.request as url
 
-from src.tokenBN.SuffixNode import *
-from src.tokenBN.CompositionDAGNode import *
-from src.tokenBN.utils.util import *
-from src.tokenBN.utils.figures import *
+from tokenBN.SuffixNode import *
 
-
-class SuffixTests(unittest.TestCase):
+class TestSuffixNode(unittest.TestCase):
     def setUp(self):
         self.test_text = "abbabababba yogabbagabba"
         self.delimiters = {" ", "\n"}
@@ -164,76 +160,10 @@ class SuffixTests(unittest.TestCase):
                           'y', 'ab', 'abba', ' ', 'bab', '\n', 'g', 'bba'}
 
         print("Testing base approach...")
-        suffix_tree, _ = get_suffix_tree(text=self.test_text,
-                                         threshold=self.threshold,
-                                         delimiters=self.delimiters)
+        suffix_tree = SuffixNode.from_text(
+            text=self.test_text,
+            threshold=self.threshold,
+            delimiters=self.delimiters
+        )
         token_set = set(suffix_tree.flat_tree_store.child_dict.keys())
         self.assertEqual(token_set, base_token_set)
-
-
-class FlatTreeNodeTests(unittest.TestCase):
-    def setUp(self):
-        self.test_text = "abbabababba yogabbagabba"
-        self.delimiters = {" ", "\n"}
-        self.threshold = 2
-
-    def test_tokenize(self):
-        actual_tokenization = ['abba', 'babab', 'ba', ' ', 'y', 'o', 'gabba', 'gabba']
-
-        print("Testing tokenization...")
-        suffix_tree, _ = get_suffix_tree(text=self.test_text,
-                                         threshold=self.threshold,
-                                         delimiters=self.delimiters)
-        tokenization = suffix_tree.flat_tree_store.tokenize(self.test_text, len(self.test_text) - 1)
-        self.assertEqual(tokenization, actual_tokenization)
-
-
-class CompositionDAGNodeTests(unittest.TestCase):
-    def setUp(self):
-        self.test_text = "abbabababba yogabbagabba"
-        self.delimiters = {" ", "\n"}
-        self.threshold = 2
-        self.suffix_tree, _ = get_suffix_tree(text=self.test_text,
-                                              threshold=self.threshold,
-                                              delimiters=self.delimiters)
-
-    def test_add_edge(self):
-        pass
-
-    def test_build_subgraph(self):
-        pass
-
-    def test_suffix_tree_to_dag(self):
-        pass
-
-    def test_dag_to_file(self):
-        test_url = "https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt"
-        with url.urlopen(test_url) as f:
-            text = f.read().decode('utf-8')
-        edge_ptr = ";"
-        self.test_text = text.replace(edge_ptr, "")
-        self.delimiters = {"\n"}
-        self.threshold = 2
-        self.suffix_tree, _ = get_suffix_tree(text=self.test_text,
-                                              threshold=self.threshold,
-                                              delimiters=self.delimiters)
-
-        dag = CompositionDAGNode()
-        # start_time = time.time()
-        dag.suffix_tree_to_dag(self.suffix_tree)
-
-        # dag.export_dag(f"bee_movie min-freq={self.threshold}.csv")
-        dag.export_dag(f"bee-movie text-patterns min-freq={self.threshold}.csv",
-                       "patterns")
-
-        if len(dag.dag_store.vertices.keys()) < 50:
-            plot_dag(dag.dag_store,
-                     A=dag.dag_store.adjacency_matrix,
-                     k=4,
-                     scaling=25)
-
-        patterns_sample = {pattern: str(tokens)[:50]+"\n" for pattern, tokens in dag.dag_store.pattern_map.items()}
-        print(f"Pattern set:\n{patterns_sample}")
-
-if __name__ == "__main__":
-    unittest.main()

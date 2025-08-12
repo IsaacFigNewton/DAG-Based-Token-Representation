@@ -1,130 +1,193 @@
 import time
-import warnings
-
 import urllib.request as url
+from typing import Dict, List, Optional, Tuple, Any
+
 import pandas as pd
+import matplotlib.pyplot as plt
 
-from config import *
-from src.tokenBN.SuffixNode import *
-from src.tokenBN.CompositionDAGNode import *
-from src.tokenBN.utils.util import *
-from src.tokenBN.utils.figures import *
-from src.tokenBN.utils.vector_embedding import *
+from config import (
+    debugging_verbosity,
+    freq_range,
+    folds,
+    delimiters
+)
+from src.tokenBN.SuffixNode import SuffixNode
+from src.tokenBN.CompositionDAGNode import CompositionDAGNode
+from src.tokenBN.utils.figures import plot_dag
 
-tokenizations = dict()
-test_results = {
+# Constants
+TEST_URL = "https://gist.githubusercontent.com/Niximacco/6ae63abd1834485811200daefc319b40/raw/2411e31293a35f3e565f61e7490a806d4720ea7e/bee%2520movie%2520script"
+TEST_TEXT_LENGTH = 5000
+MAX_VERTICES_FOR_PLOTTING = 50
+DAG_PLOT_SCALING = 25
+DAG_PLOT_K = 4
+
+# Global state
+tokenizations: Dict[Tuple[str, int], Any] = {}
+test_results: Dict[str, List] = {
     "min frequency": [],
     "test number": [],
     "mean time": [],
 }
 
-def get_tests():
-    test_url = "https://courses.cs.washington.edu/courses/cse163/20wi/files/lectures/L04/bee-movie.txt"
-    with url.urlopen(test_url) as f:
-        text = f.read().decode('utf-8')
-    # # previously 454:500
-    # text = text[454:500]
-    text = text[0:500]
-    # text = "black. Yellow, black.\n :\nOoh, black and yellow"
-    # text = "abbabababba yogabbagabba"
-    tests = [text]
+def get_tests() -> List[str]:
+    """Download and prepare test text data.
+    
+    Returns:
+        List of test text strings.
+    """
+    try:
+        with url.urlopen(TEST_URL) as f:
+            text = f.read().decode('utf-8')
+        
+        text = text[:TEST_TEXT_LENGTH]
+        tests = [text]
+        
+        print(f"Test text preview: {text[:50]}...")
+        return tests
+    except Exception as e:
+        print(f"Error downloading test data: {e}")
+        return ["Sample test text for fallback."]
 
-    print(text[:50])
-    return tests
 
-
-def run_test(text,
-             min_freq,
-             delimiters=None,
-             tree=None,
-             num_graphs_to_plot=1):
-
+def run_test(
+    text: str,
+    min_freq: int,
+    delimiters: Optional[set] = None,
+    suffix_tree: Optional[SuffixNode] = None,
+    num_graphs_to_plot: int = 1
+) -> Tuple[float, Any, Optional[SuffixNode]]:
+    """Run a single test on the given text with specified parameters.
+    
+    Args:
+        text: Input text to process
+        min_freq: Minimum frequency threshold for tokens
+        delimiters: Set of delimiter characters
+        suffix_tree: Previously constructed tree to build upon
+        num_graphs_to_plot: Number of DAG visualizations to generate
+        
+    Returns:
+        Tuple of (execution_time, suffix_tree, token_vector_mappings)
+    """
     start_time = time.time()
-    suffix_tree, tokenizations[(text, min_freq)] = get_suffix_tree(text,
-                                                                   min_freq,
-                                                                   delimiters=delimiters,
-                                                                   tree=tree)
+    if not suffix_tree:
+        suffix_tree = SuffixNode.from_text(
+            text=text,
+            threshold=min_freq,
+            delimiters=delimiters
+        )
+    else:
+        suffix_tree.clean()
+    tokenizations[(text, min_freq)] = suffix_tree.get_tokens()
 
     if debugging_verbosity["SuffixNode"]["general"] > 0:
-        print("Modified suffix tree composed in ", time.time() - start_time, " seconds.")
+        elapsed = time.time() - start_time
+        print(f"Modified suffix tree composed in {elapsed:.4f} seconds.")
         suffix_tree.print_tree()
 
     composition_dag = CompositionDAGNode()
-    # start_time = time.time()
     composition_dag.suffix_tree_to_dag(suffix_tree)
-    # end_time = time.time() - start_time
-    # print("dag composed in ", end_time, " seconds.")
 
-    if num_graphs_to_plot > 0 and len(composition_dag.dag_store.vertices.keys()) < 50:
-        plot_dag(composition_dag.dag_store,
-                 A=composition_dag.dag_store.adjacency_matrix,
-                 k=4,
-                 scaling=25)
-
+    if (
+        num_graphs_to_plot > 0 
+        and len(composition_dag.dag_store.vertices.keys()) < MAX_VERTICES_FOR_PLOTTING
+    ):
+        plot_dag(
+            composition_dag.dag_store,
+            A=composition_dag.dag_store.adjacency_matrix,
+            k=DAG_PLOT_K,
+            scaling=DAG_PLOT_SCALING
+        )
         num_graphs_to_plot -= 1
 
-    # # get tensor embeddings for all vertices
-    # start_time = time.time()
-    # token_vector_mappings = vectorize(composition_dag.dag_store.adjacency_matrix,
-    #                                   composition_dag.dag_store.reversed_token_map,
-    #                                   tokenizations[(text, min_freq)])
-    # end_time = time.time() - start_time
-
+    # Note: Vector embedding functionality is currently disabled
+    # TODO: Re-enable vector embeddings when needed
     end_time = 0
     token_vector_mappings = None
 
-    # return {(pre, cum, pos+1) for pre, cum, pos in composition_dag.dag_store.edge_set if pre is not None}
     return end_time, suffix_tree, token_vector_mappings
 
 
-def run_tests():
+def run_tests(tests: List[str]) -> None:
+    """Run all tests across different frequency thresholds.
+    
+    Args:
+        tests: List of test text strings to process
+    """
     num_graphs_to_plot = 1
-    prev_trees = dict()
+    prev_trees: Dict[int, Optional[Any]] = {}
 
     for min_freq in freq_range:
-        print("minimum frequency: ", min_freq)
+        print(f"Testing minimum frequency: {min_freq}")
 
-        for i in range(len(tests)):
-            # print("test ", i)
-            # if there's no previous tree stored for this test
-            if i not in prev_trees.keys():
-                prev_trees[i] = None
+        for test_idx, test_text in enumerate(tests):
+            if test_idx not in prev_trees:
+                prev_trees[test_idx] = None
 
-            mean_time = 0
+            total_time = 0.0
             for fold in range(folds):
-                new_time, prev_trees[i], token_vector_mappings = run_test(text=tests[i],
-                                                                          min_freq=min_freq,
-                                                                          delimiters=delimiters,
-                                                                          tree=prev_trees[i],
-                                                                          num_graphs_to_plot=num_graphs_to_plot)
-                num_graphs_to_plot -= 1
-                mean_time += new_time
+                execution_time, prev_trees[test_idx], _ = run_test(
+                    text=test_text,
+                    min_freq=min_freq,
+                    delimiters=delimiters,
+                    suffix_tree=prev_trees[test_idx],
+                    num_graphs_to_plot=num_graphs_to_plot
+                )
+                num_graphs_to_plot = max(0, num_graphs_to_plot - 1)
+                total_time += execution_time
 
-            # plot_embeddings(token_vector_mappings, max_vector_plots)
-
+            mean_time = total_time / folds
             test_results["min frequency"].append(min_freq)
-            test_results["test number"].append(i)
-            test_results["mean time"].append(mean_time / folds)
+            test_results["test number"].append(test_idx)
+            test_results["mean time"].append(mean_time)
 
-    print()
+    print("\nAll tests completed.")
+
+
+def plot_results() -> None:
+    """Generate and display performance plots from test results."""
+    if not test_results["min frequency"]:
+        print("No test results to plot.")
+        return
+        
+    tests_df = pd.DataFrame.from_dict(test_results)
+    print("\nTest Results Summary:")
+    print(tests_df.head())
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(
+        tests_df["min frequency"],
+        tests_df["mean time"],
+        marker='o',
+        linewidth=2,
+        markersize=6
+    )
+    
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.grid(True, alpha=0.3)
+    
+    plt.xlabel('Min Frequency (log scale)')
+    plt.ylabel('Mean Time (log scale)')
+    plt.title('Tokenization Performance vs Frequency Threshold')
+    plt.tight_layout()
+    plt.show()
+
+
+def main() -> None:
+    """Main execution function."""
+    print("Starting DAG-based tokenization tests...")
+    
+    tests = get_tests()
+    if not tests:
+        print("No test data available. Exiting.")
+        return
+        
+    run_tests(tests)
+    plot_results()
+    
+    print("\nTokenization analysis complete.")
 
 
 if __name__ == "__main__":
-    # warnings.filterwarnings('ignore')
-
-    tests = get_tests()
-    run_tests()
-
-    tests_df = pd.DataFrame.from_dict(test_results)
-    print(tests_df.head())
-
-    # plt.plot(tests_df["min frequency"],
-    #          tests_df["mean time"]
-    #          )
-    #
-    # plt.xscale('log')
-    # plt.yscale('log')
-    #
-    # plt.xlabel('Min Frequency (log scale)')
-    # plt.ylabel('Mean Time (log scale)')
-    # plt.show()
+    main()
