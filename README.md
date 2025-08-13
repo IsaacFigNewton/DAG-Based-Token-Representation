@@ -1,4 +1,4 @@
-<h1>Bayesian Token Network Parser</h1>
+<h1>Token Bayesian Network (TokenBN) Parser</h1>
 
 <br>
 <br>
