@@ -1,4 +1,4 @@
-<h1>DAG-Based Tokenizer</h1>
+<h1>Bayesian Token Network Parser</h1>
 
 <br>
 <br>
@@ -52,11 +52,12 @@
   </li>
 </ol>
 
-<h2>Directions for Future Work</h2>
+<h2>Future Work</h2>
 <ul>
-  <li>Add token composition likelihoods
+  <li>Add token composition probabilities
     <ul>
-      <li>Likely leads to some kind of Boltzmann machine</li>
+      <li>start with depth of 1, refactor later</li>
+      <li>tokens' posteriors can be determined via their parents in the associated markov blanket</li>
     </ul>
   </li>
   <li>Replace base set of primitive tokens with word tokens and their POS tags
